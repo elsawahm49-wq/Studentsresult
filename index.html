@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>بحث عن نتيجة الطالب</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🔍 بحث عن نتيجة الطالب</h1>
+  <input type="text" id="studentName" placeholder="أدخل اسم الطالب..." list="names"/>
+  <datalist id="names"></datalist>
+  <button onclick="searchResult()">عرض النتيجة</button>
+
+  <script>
+    async function loadNames() {
+      const response = await fetch('students_results.json');
+      const data = await response.json();
+      const datalist = document.getElementById('names');
+      Object.keys(data).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        datalist.appendChild(option);
+      });
+    }
+
+    function searchResult() {
+      const name = document.getElementById('studentName').value.trim();
+      if (name) {
+        window.location.href = 'result.html?name=' + encodeURIComponent(name) + '&class=اولي-اعدادي';
+      }
+    }
+
+    loadNames();
+  </script>
+</body>
+</html>
