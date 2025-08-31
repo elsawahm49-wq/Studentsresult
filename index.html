@@ -17,16 +17,6 @@
       color: #2c3e50;
       margin-bottom: 20px;
     }
-    .banner {
-      background: #2c3e50;
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-style: italic;
-      font-size: 28px;
-      font-weight: bold;
-    }
     select, input {
       padding: 10px;
       font-size: 16px;
@@ -78,12 +68,6 @@
   </style>
 </head>
 <body>
-
-  <!-- 🔹 البانر الرئيسي -->
-  <div class="banner">
-    منصة مستر عبدالله التمادي
-  </div>
-
   <h1>📊 البحث عن نتيجة الطالب</h1>
 
   <label for="studentClass">اختر المرحلة:</label><br>
@@ -98,15 +82,21 @@
   </select>
 
   <br>
-  <label for="examMonth">اختر الشهر:</label><br>
-  <select id="examMonth">
+  <label for="studentMonth">اختر الشهر:</label><br>
+  <select id="studentMonth">
     <option value="">-- اختر الشهر --</option>
     <option value="يناير">يناير</option>
     <option value="فبراير">فبراير</option>
     <option value="مارس">مارس</option>
-    <option value="ابريل">أبريل</option>
+    <option value="ابريل">ابريل</option>
     <option value="مايو">مايو</option>
     <option value="يونيو">يونيو</option>
+    <option value="يوليو">يوليو</option>
+    <option value="اغسطس">اغسطس</option>
+    <option value="سبتمبر">سبتمبر</option>
+    <option value="اكتوبر">اكتوبر</option>
+    <option value="نوفمبر">نوفمبر</option>
+    <option value="ديسمبر">ديسمبر</option>
   </select>
 
   <div id="nameField">
@@ -142,19 +132,23 @@
         const name = cols[0].trim();
         const cls = cols[1].trim();
         const month = cols[2].trim();
+        const grades = cols.slice(3);
 
-        if (!studentsByClass[cls]) studentsByClass[cls] = [];
-        studentsByClass[cls].push({ name, month });
+        if (!studentsByClass[cls]) studentsByClass[cls] = {};
+        if (!studentsByClass[cls][month]) studentsByClass[cls][month] = [];
+        studentsByClass[cls][month].push({ name, grades });
       });
 
-      // شيل التكرارات ورتب
+      // نشيل التكرارات
       for (let cls in studentsByClass) {
-        const seen = new Set();
-        studentsByClass[cls] = studentsByClass[cls].filter(s => {
-          if (seen.has(s.name)) return false;
-          seen.add(s.name);
-          return true;
-        }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
+        for (let month in studentsByClass[cls]) {
+          const seen = new Set();
+          studentsByClass[cls][month] = studentsByClass[cls][month].filter(s => {
+            if (seen.has(s.name)) return false;
+            seen.add(s.name);
+            return true;
+          }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
+        }
       }
     }
 
@@ -162,31 +156,46 @@
       loadStudents();
 
       const classSelect = document.getElementById("studentClass");
+      const monthSelect = document.getElementById("studentMonth");
       const nameField = document.getElementById("nameField");
       const studentNameInput = document.getElementById("studentName");
       const suggestionsBox = document.getElementById("suggestions");
 
-      classSelect.addEventListener("change", function() {
-        if (!this.value) {
+      function resetNameField() {
+        studentNameInput.value = "";
+        suggestionsBox.innerHTML = "";
+        suggestionsBox.style.display = "none";
+      }
+
+      classSelect.addEventListener("change", () => {
+        resetNameField();
+        if (!classSelect.value || !monthSelect.value) {
           nameField.style.display = "none";
           return;
         }
         nameField.style.display = "block";
-        studentNameInput.value = "";
-        suggestionsBox.innerHTML = "";
-        suggestionsBox.style.display = "none";
+      });
+
+      monthSelect.addEventListener("change", () => {
+        resetNameField();
+        if (!classSelect.value || !monthSelect.value) {
+          nameField.style.display = "none";
+          return;
+        }
+        nameField.style.display = "block";
       });
 
       studentNameInput.addEventListener("input", function() {
         const val = normalizeArabic(this.value);
         const selectedClass = classSelect.value;
+        const selectedMonth = monthSelect.value;
 
-        if (!selectedClass || val.length === 0) {
+        if (!selectedClass || !selectedMonth || val.length === 0) {
           suggestionsBox.style.display = "none";
           return;
         }
 
-        const filtered = studentsByClass[selectedClass]
+        const filtered = studentsByClass[selectedClass][selectedMonth]
           .filter(s => normalizeArabic(s.name).includes(val))
           .slice(0, 5);
 
@@ -208,34 +217,17 @@
       });
     });
 
-    // ✅ التحقق من وجود الشهر قبل الفتح
-    async function searchResult() {
+    function searchResult() {
       const studentName = document.getElementById("studentName").value.trim();
       const studentClass = document.getElementById("studentClass").value;
-      const examMonth = document.getElementById("examMonth").value;
+      const studentMonth = document.getElementById("studentMonth").value;
 
-      if (!studentName || !studentClass || !examMonth) {
+      if (!studentName || !studentClass || !studentMonth) {
         alert("⚠️ من فضلك اختر المرحلة والشهر واكتب اسم الطالب.");
         return;
       }
 
-      const response = await fetch("students_results.csv");
-      const text = await response.text();
-      const rows = text.split("\n").slice(1);
-
-      const exists = rows.some(row => {
-        const cols = row.split(",");
-        return cols[1]?.trim() === studentClass &&
-               cols[2]?.trim() === examMonth;
-      });
-
-      if (!exists) {
-        alert("⛔ لم يتم تسجيل الدرجات لشهر " + examMonth + " بعد.");
-        return;
-      }
-
-      window.location.href =
-        `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(examMonth)}`;
+      window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(studentMonth)}`;
     }
   </script>
 </body>
