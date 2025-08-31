@@ -121,12 +121,13 @@
       let found = null;
       rows.forEach(row => {
         const cols = row.split(",");
-        if (cols.length < 4) return;
+        if (cols.length < 11) return; // نتأكد إن فيه 8 حصص بعد العمود 3
 
         const name = cols[0].trim();
         const cls = cols[1].trim();
         const month = cols[2].trim();
-        const grades = cols.slice(3).map(x => x.trim());
+        // ناخد 8 حصص بالترتيب زي ما في CSV
+        const grades = cols.slice(3, 11).map(x => x.trim());
 
         if (name === studentName && cls === studentClass && month === studentMonth) {
           found = { name, cls, month, grades };
@@ -170,7 +171,7 @@
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
 
-      // عرض 8 حصص ثابتة
+      // عرض 8 حصص بالترتيب
       for (let i = 0; i < 8; i++) {
         const g = found.grades[i] || "-";
         html += `<tr><td>الحصة ${i+1}</td><td>${g}</td></tr>`;
