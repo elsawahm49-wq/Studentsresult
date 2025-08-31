@@ -2,18 +2,35 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>🔎 البحث - الصف الثالث الإعدادي</title>
+  <title>🔎 البحث - المرحلة الإعدادية</title>
   <style>
     body { font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px; }
-    input { width: 300px; padding: 8px; font-size: 16px; }
+    select, input, button { padding: 8px; font-size: 16px; margin: 5px 0; }
+    input { width: 300px; }
+    button { background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:disabled { background: #999; cursor: not-allowed; }
+    button:hover:not(:disabled) { background: #45a049; }
     ul { list-style: none; padding: 0; margin-top: 10px; }
     li { padding: 5px; background: #f2f2f2; margin-bottom: 5px; border-radius: 5px; }
     li:hover { background: #ddd; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h2>🔎 البحث في الصف الثالث الإعدادي</h2>
+  <h2>🔎 البحث في المرحلة الإعدادية</h2>
+
+  <label for="grade">اختر الصف:</label>
+  <select id="grade">
+    <option value="">-- اختر الصف --</option>
+    <option value="كشف_1_اعدادي.csv">الأول الإعدادي</option>
+    <option value="كشف_2_اعدادي.csv">الثاني الإعدادي</option>
+    <option value="كشف_3_اعدادي_2026_نظيف.csv">الثالث الإعدادي</option>
+  </select>
+
+  <br>
   <input type="text" id="search" placeholder="اكتب اسم الطالب...">
+  <button id="showResults" disabled>عرض النتيجة</button>
+
+  <ul id="suggestions"></ul>
   <ul id="results"></ul>
 
   <script>
@@ -32,31 +49,75 @@
         .toLowerCase();
     }
 
-    // تحميل ملف CSV من المشروع
-    fetch("كشف_3_اعدادي_2026_نظيف.csv")
-      .then(response => response.text())
-      .then(data => {
-        // تقسيم الملف لأسطر
-        const rows = data.split("\n").slice(1); // نتجاهل العنوان "الاسم,درجة1..."
-        students = rows.map(row => {
-          const cols = row.split(",");
-          return {
-            name: cols[0]?.trim(),
-            normName: normalizeArabic(cols[0] || ""),
-            grades: cols.slice(1).filter(x => x.trim() !== "")
-          };
+    // تحميل ملف CSV للصف المحدد
+    function loadCSV(fileName) {
+      if (!fileName) {
+        students = [];
+        document.getElementById("showResults").disabled = true;
+        return;
+      }
+      fetch(fileName)
+        .then(response => response.text())
+        .then(data => {
+          const rows = data.split("\n").slice(1);
+          students = rows.map(row => {
+            const cols = row.split(",");
+            return {
+              name: cols[0]?.trim(),
+              normName: normalizeArabic(cols[0] || ""),
+              grades: cols.slice(1).filter(x => x.trim() !== "")
+            };
+          });
+          document.getElementById("showResults").disabled = false;
         });
-      });
+    }
 
-    // البحث الفوري
+    // عند اختيار الصف
+    document.getElementById("grade").addEventListener("change", function () {
+      loadCSV(this.value);
+      document.getElementById("results").innerHTML = "";
+      document.getElementById("suggestions").innerHTML = "";
+      document.getElementById("search").value = "";
+    });
+
+    // عرض اقتراحات سريعة أثناء الكتابة
     document.getElementById("search").addEventListener("input", function () {
       const query = normalizeArabic(this.value);
+      const suggestionsEl = document.getElementById("suggestions");
+      suggestionsEl.innerHTML = "";
+
+      if (query.length === 0 || students.length === 0) return;
+
+      const matches = students.filter(s => s.normName.includes(query)).slice(0, 5); // أول 5 اقتراحات
+
+      matches.forEach(s => {
+        const li = document.createElement("li");
+        li.textContent = s.name;
+        li.onclick = () => {
+          document.getElementById("search").value = s.name;
+          suggestionsEl.innerHTML = "";
+        };
+        suggestionsEl.appendChild(li);
+      });
+    });
+
+    // البحث عند الضغط على زر "عرض النتيجة"
+    document.getElementById("showResults").addEventListener("click", function () {
+      const query = normalizeArabic(document.getElementById("search").value);
       const resultsEl = document.getElementById("results");
       resultsEl.innerHTML = "";
 
-      if (query.length === 0) return;
+      if (!query) {
+        resultsEl.innerHTML = "<li>⚠️ اكتب اسم الطالب أولا</li>";
+        return;
+      }
 
       const matches = students.filter(s => s.normName.includes(query));
+
+      if (matches.length === 0) {
+        resultsEl.innerHTML = "<li>❌ لا توجد نتائج مطابقة</li>";
+        return;
+      }
 
       matches.forEach(s => {
         const li = document.createElement("li");
