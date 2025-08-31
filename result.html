@@ -97,8 +97,9 @@
     async function loadResult() {
       const studentName = getQueryParam("name");
       const studentClass = getQueryParam("class");
+      const examMonth = getQueryParam("month");
 
-      if (!studentName || !studentClass) {
+      if (!studentName || !studentClass || !examMonth) {
         document.getElementById("resultCard").innerHTML = "❌ البيانات غير مكتملة!";
         return;
       }
@@ -110,14 +111,15 @@
       let found = null;
       rows.forEach(row => {
         const cols = row.split(",");
-        if (cols.length < 3) return;
+        if (cols.length < 4) return;
 
         const name = cols[0].trim();
         const cls = cols[1].trim();
-        const grades = cols.slice(2).map(x => x.trim());
+        const month = cols[2].trim();
+        const grades = cols.slice(3).map(x => x.trim());
 
-        if (name === studentName && cls === studentClass) {
-          found = { name, cls, grades };
+        if (name === studentName && cls === studentClass && month === examMonth) {
+          found = { name, cls, month, grades };
         }
       });
 
@@ -126,7 +128,7 @@
         return;
       }
 
-      // 🔹 إعادة ترتيب الحصص (تبديل 1 ↔ 3 حسب المشكلة اللي ذكرتها)
+      // 🔹 ترتيب الحصص
       let orderedGrades = [];
       orderedGrades[0] = found.grades[2] || "-"; // الحصة 1
       orderedGrades[1] = found.grades[1] || "-"; // الحصة 2
@@ -137,13 +139,11 @@
       orderedGrades[6] = found.grades[6] || "-"; // الحصة 7
       orderedGrades[7] = found.grades[7] || "-"; // الحصة 8
 
-      // 🔹 حساب النسبة من شكل "درجة/نهاية"
+      // 🔹 حساب النسبة من "درجة/نهاية"
       let total = 0, maxTotal = 0;
       orderedGrades.forEach(g => {
         if (g.includes("/")) {
-          const parts = g.split("/");
-          const grade = parseFloat(parts[0]);
-          const maxGrade = parseFloat(parts[1]);
+          const [grade, maxGrade] = g.split("/").map(Number);
           if (!isNaN(grade) && !isNaN(maxGrade)) {
             total += grade;
             maxTotal += maxGrade;
@@ -155,8 +155,7 @@
       percentage = percentage.toFixed(2);
 
       // 🔹 التقدير العام
-      let gradeText = "";
-      let gradeClass = "";
+      let gradeText = "", gradeClass = "";
       if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
       else if (percentage >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
       else if (percentage >= 60) { gradeText = "جيد"; gradeClass = "good"; }
@@ -166,6 +165,7 @@
       // 🔹 عرض البيانات
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
+      html += `<p>🗓️ الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة / النهاية</th></tr>`;
       for (let i = 0; i < 8; i++) {
