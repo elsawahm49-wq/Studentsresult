@@ -37,7 +37,7 @@
     .good { color: orange; }
     .pass { color: gray; }
     .weak { color: red; }
-    a {
+    a.button {
       display: inline-block;
       margin-top: 15px;
       text-decoration: none;
@@ -46,7 +46,13 @@
       padding: 10px 20px;
       border-radius: 8px;
     }
-    a:hover { background: #2980b9; }
+    a.button:hover { background: #2980b9; }
+    .whatsapp {
+      background: #25D366;
+    }
+    .whatsapp:hover {
+      background: #1ebe5c;
+    }
   </style>
 </head>
 <body>
@@ -132,7 +138,9 @@
       html += `<tr><td class="total">النسبة</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
-      html += `<a href="index.html">⬅ الرجوع للبحث</a>`;
+      html += `<a href="index.html" class="button">⬅ الرجوع للبحث</a><br><br>`;
+      html += `<a href="https://wa.me/201210196595?text=مرحبًا،%20أريد%20الاستفسار%20عن%20نتيجة%20الطالب%20${encodeURIComponent(found.name)}" 
+                 target="_blank" class="button whatsapp">📱 تواصل عبر واتساب</a>`;
 
       document.getElementById("resultCard").innerHTML = html;
     }
