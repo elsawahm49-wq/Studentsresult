@@ -17,6 +17,17 @@
       color: #2c3e50;
       margin-bottom: 20px;
     }
+    .banner {
+      background: #2c3e50;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-style: italic;
+      font-size: 28px;
+      font-weight: bold;
+      text-align: center;
+    }
     select, input {
       padding: 10px;
       font-size: 16px;
@@ -65,31 +76,14 @@
       background: #3498db;
       color: white;
     }
-
-    /* حركة الجملة الافتتاحية */
-    .fade-in {
-      opacity: 0;
-      transform: translateY(-20px);
-      animation: fadeInUp 1s ease forwards;
-    }
-    @keyframes fadeInUp {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
   </style>
 </head>
 <body>
-  <!-- العنوان الرئيسي -->
-  <div style="background:#2c3e50; color:white; padding:15px; border-radius:8px; margin-bottom:20px;">
-    <h1 style="margin:0; font-size:28px;">
-      منصة مستر عبدالله التمادي
-    </h1>
-  </div>
 
-  <!-- الجملة الافتتاحية -->
-  <h2 id="welcomeMessage" class="fade-in" style="color:#2c3e50; margin-bottom:20px;"></h2>
+  <!-- 🔹 البانر الرئيسي -->
+  <div class="banner">
+    منصة مستر عبدالله التمادي
+  </div>
 
   <h1>📊 البحث عن نتيجة الطالب</h1>
 
@@ -202,16 +196,6 @@
           suggestionsBox.style.display = "none";
         }
       });
-
-      // الجملة الافتتاحية المتغيرة
-      const messages = [
-        "👋 مرحبًا بكم في منصة نتائج الطلاب – ابحث عن نتيجتك بسهولة وسرعة",
-        "📊 اكتشف نتيجتك للمرحلة الإعدادية والثانوية بخطوة واحدة فقط",
-        "⭐ أهلاً وسهلاً! أدخل اسمك واختر صفك لتتعرف على نتيجتك",
-        "🎓 النجاح طريقك للمستقبل – اعرف نتيجتك الآن!"
-      ];
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      document.getElementById("welcomeMessage").textContent = randomMessage;
     });
 
     function searchResult() {
