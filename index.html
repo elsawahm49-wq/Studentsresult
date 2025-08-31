@@ -13,19 +13,20 @@
       text-align: center;
       padding: 30px;
     }
-    h1 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-    }
     .banner {
-      background: linear-gradient(90deg, #3498db, #2980b9);
+      background: #3498db;
       color: white;
       font-size: 22px;
       font-weight: bold;
       font-style: italic;
       padding: 15px;
       border-radius: 10px;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
     }
     select, input {
       padding: 10px;
@@ -78,24 +79,24 @@
   </style>
 </head>
 <body>
-  <div class="banner" id="bannerText">🎓 منصة مستر عبدالله التمادي</div>
-
+  <div class="banner">📌 منصة مستر عبدالله التمادي</div>
   <h1>📊 البحث عن نتيجة الطالب</h1>
 
   <label for="studentClass">اختر المرحلة:</label><br>
   <select id="studentClass">
     <option value="">-- اختر المرحلة --</option>
-    <option value="اولي-اعدادي">الأولى الإعدادية</option>
-    <option value="تانيه-اعدادي">الثانية الإعدادية</option>
-    <option value="تالته-اعدادي">الثالثة الإعدادية</option>
-    <option value="اولي-ثانوي">الأولى الثانوية</option>
-    <option value="تانيه-ثانوي">الثانية الثانوية</option>
-    <option value="تالته-ثانوي">الثالثة الثانوية</option>
+    <option value="3e">الثالثة الإعدادية</option>
+    <option value="1s">الأولى الثانوية</option>
   </select>
 
-  <br>
-  <label for="studentMonth">اختر الشهر:</label><br>
-  <select id="studentMonth">
+  <div id="nameField">
+    <label for="studentName">اسم الطالب:</label><br>
+    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
+    <ul id="suggestions" class="suggestions"></ul>
+  </div>
+
+  <label for="month">اختر الشهر:</label><br>
+  <select id="month">
     <option value="">-- اختر الشهر --</option>
     <option value="يناير">يناير</option>
     <option value="فبراير">فبراير</option>
@@ -111,29 +112,10 @@
     <option value="ديسمبر">ديسمبر</option>
   </select>
 
-  <div id="nameField">
-    <label for="studentName">اسم الطالب:</label><br>
-    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
-    <ul id="suggestions" class="suggestions"></ul>
-  </div>
-
   <br>
   <button onclick="searchResult()">عرض النتيجة</button>
 
   <script>
-    const phrases = [
-      "🎓 منصة مستر عبدالله التمادي - معًا نحو التفوق",
-      "📘 العلم نور ومنصة مستر عبدالله التمادي دليلك",
-      "💡 كل يوم هو فرصة جديدة للتعلم",
-      "🏆 النجاح يبدأ بخطوة، ومنصتنا هي خطوتك الأولى",
-      "🌟 اجتهد اليوم، لتتفوق غدًا"
-    ];
-    document.addEventListener("DOMContentLoaded", () => {
-      const banner = document.getElementById("bannerText");
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      banner.textContent = randomPhrase;
-    });
-
     function normalizeArabic(str) {
       return str
         .replace(/[أإآا]/g, "ا")
@@ -144,63 +126,53 @@
     }
 
     let studentsByClass = {};
+    const files = {
+      "3e": "students_results_3e.csv",
+      "1s": "students_results_1thanwy.csv"
+    };
 
-    async function loadStudents(fileName, cls) {
-      const response = await fetch(fileName);
+    async function loadStudents(cls) {
+      if (!files[cls]) return;
+      const response = await fetch(files[cls]);
       const text = await response.text();
       const rows = text.split("\n").slice(1);
 
       studentsByClass[cls] = [];
       rows.forEach(row => {
         const cols = row.split(",");
-        if (cols.length < 2) return;
+        if (cols.length < 3) return;
         const name = cols[0].trim();
-        const className = cols[1].trim();
-        if (className === cls) {
-          studentsByClass[cls].push({ name });
-        }
-      });
+        const gradeClass = cols[1].trim();
+        const month = cols[2].trim();
+        const grades = cols.slice(3);
 
-      // حذف التكرارات
-      const seen = new Set();
-      studentsByClass[cls] = studentsByClass[cls].filter(s => {
-        if (seen.has(s.name)) return false;
-        seen.add(s.name);
-        return true;
-      }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
+        studentsByClass[cls].push({ name, gradeClass, month, grades });
+      });
     }
 
-    document.getElementById("studentClass").addEventListener("change", async function() {
-      const selectedClass = this.value;
+    document.addEventListener("DOMContentLoaded", () => {
+      const classSelect = document.getElementById("studentClass");
       const nameField = document.getElementById("nameField");
       const studentNameInput = document.getElementById("studentName");
       const suggestionsBox = document.getElementById("suggestions");
 
-      if (!selectedClass) {
-        nameField.style.display = "none";
-        return;
-      }
-
-      nameField.style.display = "block";
-      studentNameInput.value = "";
-      suggestionsBox.innerHTML = "";
-      suggestionsBox.style.display = "none";
-
-      // اختيار الملف الصحيح لكل صف
-      let fileName = "";
-      switch (selectedClass) {
-        case "اولي-اعدادي": fileName = "students_results_1edady.csv"; break;
-        case "تانيه-اعدادي": fileName = "students_results_2edady.csv"; break;
-        case "تالته-اعدادي": fileName = "students_results_3edady.csv"; break;
-        case "اولي-ثانوي": fileName = "students_results_1thanwy.csv"; break;
-        case "تانيه-ثانوي": fileName = "students_results_2thanwy.csv"; break;
-        case "تالته-ثانوي": fileName = "students_results_3thanwy.csv"; break;
-      }
-
-      if (fileName) await loadStudents(fileName, selectedClass);
+      classSelect.addEventListener("change", async function() {
+        const selectedClass = this.value;
+        if (!selectedClass) {
+          nameField.style.display = "none";
+          return;
+        }
+        await loadStudents(selectedClass);
+        nameField.style.display = "block";
+        studentNameInput.value = "";
+        suggestionsBox.innerHTML = "";
+        suggestionsBox.style.display = "none";
+      });
 
       studentNameInput.addEventListener("input", function() {
         const val = normalizeArabic(this.value);
+        const selectedClass = classSelect.value;
+
         if (!selectedClass || val.length === 0) {
           suggestionsBox.style.display = "none";
           return;
@@ -231,14 +203,14 @@
     function searchResult() {
       const studentName = document.getElementById("studentName").value.trim();
       const studentClass = document.getElementById("studentClass").value;
-      const studentMonth = document.getElementById("studentMonth").value;
+      const month = document.getElementById("month").value;
 
-      if (!studentName || !studentClass || !studentMonth) {
-        alert("⚠️ من فضلك اختر المرحلة والشهر واكتب اسم الطالب.");
+      if (!studentName || !studentClass || !month) {
+        alert("⚠️ من فضلك اختر المرحلة واكتب اسم الطالب واختر الشهر.");
         return;
       }
 
-      window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(studentMonth)}`;
+      window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(month)}`;
     }
   </script>
 </body>
