@@ -113,13 +113,20 @@
         if (cols.length < 2) return;
         const name = cols[0].trim();
         const cls = cols[1].trim();
+        const grades = cols.slice(2); // باقي الأعمدة درجات
 
         if (!studentsByClass[cls]) studentsByClass[cls] = [];
-        studentsByClass[cls].push(name);
+        studentsByClass[cls].push({ name, grades });
       });
 
+      // نشيل التكرارات ونرتب
       for (let cls in studentsByClass) {
-        studentsByClass[cls] = [...new Set(studentsByClass[cls])].sort();
+        const seen = new Set();
+        studentsByClass[cls] = studentsByClass[cls].filter(s => {
+          if (seen.has(s.name)) return false;
+          seen.add(s.name);
+          return true;
+        }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
       }
     }
 
@@ -152,17 +159,17 @@
           return;
         }
 
-        const filtered = studentsByClass[selectedClass].filter(n =>
-          normalizeArabic(n).includes(val)
-        );
+        const filtered = studentsByClass[selectedClass]
+          .filter(s => normalizeArabic(s.name).includes(val))
+          .slice(0, 5); // أول 5 اقتراحات
 
         suggestionsBox.innerHTML = "";
         if (filtered.length > 0) {
-          filtered.forEach(n => {
+          filtered.forEach(s => {
             const li = document.createElement("li");
-            li.textContent = n;
+            li.textContent = s.name;
             li.addEventListener("click", () => {
-              studentNameInput.value = n;
+              studentNameInput.value = s.name;
               suggestionsBox.style.display = "none";
             });
             suggestionsBox.appendChild(li);
@@ -183,6 +190,7 @@
         return;
       }
 
+      // هننقل الاسم + الصف للصفحة التانية
       window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}`;
     }
   </script>
