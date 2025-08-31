@@ -13,23 +13,17 @@
       padding: 30px;
     }
     h1 {
-      color: #2c3e50;
-    }
-    .banner {
-      background: #2c3e50;
-      color: white;
+      color: #fff;
+      background: linear-gradient(90deg, #3498db, #2980b9);
       padding: 15px;
       border-radius: 8px;
-      margin-bottom: 20px;
       font-style: italic;
-      font-size: 28px;
-      font-weight: bold;
     }
     .card {
       background: white;
       border-radius: 10px;
       padding: 20px;
-      max-width: 600px;
+      max-width: 650px;
       margin: 20px auto;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: right;
@@ -58,7 +52,6 @@
       font-size: 18px;
       font-weight: bold;
       margin-top: 15px;
-      text-align: center;
     }
     .excellent { color: green; }
     .verygood { color: #2980b9; }
@@ -80,12 +73,6 @@
   </style>
 </head>
 <body>
-
-  <!-- 🔹 البانر الرئيسي -->
-  <div class="banner">
-    منصة مستر عبدالله التمادي
-  </div>
-
   <h1>📊 نتيجة الطالب</h1>
   <div id="resultCard" class="card">جاري التحميل...</div>
 
@@ -97,9 +84,9 @@
     async function loadResult() {
       const studentName = getQueryParam("name");
       const studentClass = getQueryParam("class");
-      const examMonth = getQueryParam("month");
+      const studentMonth = getQueryParam("month");
 
-      if (!studentName || !studentClass || !examMonth) {
+      if (!studentName || !studentClass || !studentMonth) {
         document.getElementById("resultCard").innerHTML = "❌ البيانات غير مكتملة!";
         return;
       }
@@ -118,58 +105,47 @@
         const month = cols[2].trim();
         const grades = cols.slice(3).map(x => x.trim());
 
-        if (name === studentName && cls === studentClass && month === examMonth) {
+        if (name === studentName && cls === studentClass && month === studentMonth) {
           found = { name, cls, month, grades };
         }
       });
 
       if (!found) {
-        document.getElementById("resultCard").innerHTML = "❌ لم يتم العثور على الطالب!";
+        document.getElementById("resultCard").innerHTML = "❌ لا توجد بيانات لهذا الطالب في هذا الشهر!";
         return;
       }
 
-      // 🔹 ترتيب الحصص
-      let orderedGrades = [];
-      orderedGrades[0] = found.grades[2] || "-"; // الحصة 1
-      orderedGrades[1] = found.grades[1] || "-"; // الحصة 2
-      orderedGrades[2] = found.grades[0] || "-"; // الحصة 3
-      orderedGrades[3] = found.grades[3] || "-"; // الحصة 4
-      orderedGrades[4] = found.grades[4] || "-"; // الحصة 5
-      orderedGrades[5] = found.grades[5] || "-"; // الحصة 6
-      orderedGrades[6] = found.grades[6] || "-"; // الحصة 7
-      orderedGrades[7] = found.grades[7] || "-"; // الحصة 8
-
-      // 🔹 حساب النسبة من "درجة/نهاية"
+      // حساب المجموع من شكل "x/y"
       let total = 0, maxTotal = 0;
-      orderedGrades.forEach(g => {
+      found.grades.forEach(g => {
         if (g.includes("/")) {
-          const [grade, maxGrade] = g.split("/").map(Number);
-          if (!isNaN(grade) && !isNaN(maxGrade)) {
-            total += grade;
-            maxTotal += maxGrade;
+          const [score, max] = g.split("/").map(Number);
+          if (!isNaN(score) && !isNaN(max)) {
+            total += score;
+            maxTotal += max;
           }
         }
       });
 
-      let percentage = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
-      percentage = percentage.toFixed(2);
+      const percentage = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : 0;
 
-      // 🔹 التقدير العام
-      let gradeText = "", gradeClass = "";
+      // تقدير عام لفظي
+      let gradeText = "";
+      let gradeClass = "";
       if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
       else if (percentage >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
       else if (percentage >= 60) { gradeText = "جيد"; gradeClass = "good"; }
       else if (percentage >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
       else { gradeText = "ضعيف"; gradeClass = "weak"; }
 
-      // 🔹 عرض البيانات
+      // عرض البيانات في جدول
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
-      html += `<p>🗓️ الشهر: ${found.month}</p>`;
+      html += `<p>📅 الشهر: ${found.month}</p>`;
       html += `<table>
-                <tr><th>الحصة</th><th>الدرجة / النهاية</th></tr>`;
+                <tr><th>الحصة</th><th>الدرجة</th></tr>`;
       for (let i = 0; i < 8; i++) {
-        html += `<tr><td>الحصة ${i+1}</td><td>${orderedGrades[i]}</td></tr>`;
+        html += `<tr><td>الحصة ${i+1}</td><td>${found.grades[i] || "-"}</td></tr>`;
       }
       html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
