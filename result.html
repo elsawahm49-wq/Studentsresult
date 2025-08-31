@@ -19,25 +19,41 @@
       background: white;
       border-radius: 10px;
       padding: 20px;
-      max-width: 400px;
+      max-width: 600px;
       margin: 20px auto;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: right;
     }
-    .grades {
+    table {
+      width: 100%;
+      border-collapse: collapse;
       margin-top: 15px;
-      padding: 0;
-      list-style: none;
     }
-    .grades li {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #3498db;
+      color: white;
     }
     .total {
       font-weight: bold;
       color: #2980b9;
-      margin-top: 10px;
     }
+    .grade {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    .excellent { color: green; }
+    .verygood { color: #2980b9; }
+    .good { color: orange; }
+    .pass { color: gray; }
+    .weak { color: red; }
     a {
       display: inline-block;
       margin-top: 15px;
@@ -100,15 +116,26 @@
         if (!isNaN(num)) total += num;
       });
 
-      // عرض البيانات
+      // تقدير عام لفظي حسب المجموع
+      let gradeText = "";
+      let gradeClass = "";
+      if (total >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
+      else if (total >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
+      else if (total >= 60) { gradeText = "جيد"; gradeClass = "good"; }
+      else if (total >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
+      else { gradeText = "ضعيف"; gradeClass = "weak"; }
+
+      // عرض البيانات في جدول
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
-      html += `<ul class="grades">`;
+      html += `<table>
+                <tr><th>الحصة</th><th>الدرجة</th></tr>`;
       found.grades.forEach((g, i) => {
-        html += `<li>المادة ${i+1}: ${g}</li>`;
+        html += `<tr><td>الحصة ${i+1}</td><td>${g || "-"}</td></tr>`;
       });
-      html += `</ul>`;
-      html += `<p class="total">📊 المجموع الكلي: ${total}</p>`;
+      html += `<tr><td class="total">المجموع الكلي</td><td class="total">${total}</td></tr>`;
+      html += `</table>`;
+      html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
       html += `<a href="index.html">⬅ الرجوع للبحث</a>`;
 
       document.getElementById("resultCard").innerHTML = html;
