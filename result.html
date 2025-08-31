@@ -4,101 +4,117 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>نتيجة الطالب</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background: #f0f2f5;
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 400px;
+      margin: 20px auto;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: right;
+    }
+    .grades {
+      margin-top: 15px;
+      padding: 0;
+      list-style: none;
+    }
+    .grades li {
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+    .total {
+      font-weight: bold;
+      color: #2980b9;
+      margin-top: 10px;
+    }
+    a {
+      display: inline-block;
+      margin-top: 15px;
+      text-decoration: none;
+      color: white;
+      background: #3498db;
+      padding: 10px 20px;
+      border-radius: 8px;
+    }
+    a:hover {
+      background: #2980b9;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <h1>📊 نتيجة الطالب</h1>
-  </header>
-
-  <main class="result-box" id="studentResult">
-    <p>جاري تحميل النتيجة...</p>
-  </main>
-
-  <footer>
-    <p>جميع الحقوق محفوظة © 2025</p>
-  </footer>
+  <h1>📊 نتيجة الطالب</h1>
+  <div id="resultCard" class="card">جاري التحميل...</div>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const studentName = urlParams.get("name");
-    const studentClass = urlParams.get("class");
-
-    const classNames = {
-      "اولي-اعدادي": "الأولى الإعدادية",
-      "تانيه-اعدادي": "الثانية الإعدادية",
-      "تالته-اعدادي": "الثالثة الإعدادية",
-      "اولي-ثانوي": "الأولى الثانوية",
-      "تانيه-ثانوي": "الثانية الثانوية",
-      "تالته-ثانوي": "الثالثة الثانوية"
-    };
-
-    async function loadData() {
-      try {
-        const response = await fetch("students_results.csv");
-        const text = await response.text();
-        const rows = text.split("\n").slice(1); // تجاهل الصف الأول (العناوين)
-
-        let found = false;
-        rows.forEach(row => {
-          const cols = row.split(",");
-          const name = cols[0]?.trim();
-          const cls = cols[1]?.trim();
-
-          if (name === studentName && cls === studentClass) {
-            found = true;
-            const grades = cols.slice(2); // الباقي درجات
-
-            let table = "<table><tr><th>الحصة</th><th>الدرجة</th></tr>";
-            let total = 0, maxTotal = 0;
-
-            grades.forEach((g, i) => {
-              if (g && g.includes("/")) {
-                const [got, max] = g.split("/").map(x => x.trim());
-                total += parseFloat(got);
-                maxTotal += parseFloat(max);
-                table += `<tr><td>الحصة ${i + 1}</td><td>${got} / ${max}</td></tr>`;
-              }
-            });
-
-            const percent = (total / maxTotal) * 100;
-            let status = "";
-            if (percent >= 85) status = `<div class="grade excellent">🌟 ممتاز</div>`;
-            else if (percent >= 70) status = `<div class="grade verygood">👍 جيد جدًا</div>`;
-            else if (percent >= 50) status = `<div class="grade good">🙂 جيد</div>`;
-            else status = `<div class="grade weak">⚠️ ضعيف</div>`;
-
-            table += `
-              <tr><th>المجموع</th><td>${total} / ${maxTotal}</td></tr>
-              <tr><th>النسبة المئوية</th><td>${percent.toFixed(2)}%</td></tr>
-            `;
-            table += "</table>";
-
-            document.getElementById("studentResult").innerHTML = `
-              <h2>${studentName}</h2>
-              <h3>${classNames[studentClass] || studentClass}</h3>
-              ${table}
-              ${status}
-              <br>
-              <a href="index.html" class="back-btn">🔙 الرجوع للبحث</a>
-            `;
-          }
-        });
-
-        if (!found) {
-          document.getElementById("studentResult").innerHTML =
-            `<p style="color:red; font-weight:bold;">⚠️ لم يتم العثور على الطالب. تأكد من الاسم والمرحلة.</p>
-             <a href="index.html" class="back-btn">🔙 الرجوع للبحث</a>`;
-        }
-
-      } catch (e) {
-        console.error("خطأ:", e);
-        document.getElementById("studentResult").innerHTML =
-          "<p style='color:red; font-weight:bold;'>❌ حدث خطأ أثناء تحميل البيانات</p>";
-      }
+    function getQueryParam(param) {
+      return new URLSearchParams(window.location.search).get(param);
     }
 
-    loadData();
+    async function loadResult() {
+      const studentName = getQueryParam("name");
+      const studentClass = getQueryParam("class");
+
+      if (!studentName || !studentClass) {
+        document.getElementById("resultCard").innerHTML = "❌ البيانات غير مكتملة!";
+        return;
+      }
+
+      const response = await fetch("students_results.csv");
+      const text = await response.text();
+      const rows = text.split("\n").slice(1);
+
+      let found = null;
+      rows.forEach(row => {
+        const cols = row.split(",");
+        if (cols.length < 3) return;
+
+        const name = cols[0].trim();
+        const cls = cols[1].trim();
+        const grades = cols.slice(2).map(x => x.trim());
+
+        if (name === studentName && cls === studentClass) {
+          found = { name, cls, grades };
+        }
+      });
+
+      if (!found) {
+        document.getElementById("resultCard").innerHTML = "❌ لم يتم العثور على الطالب!";
+        return;
+      }
+
+      // حساب المجموع (محاولة استخراج الأرقام)
+      let total = 0;
+      found.grades.forEach(g => {
+        const num = parseFloat(g);
+        if (!isNaN(num)) total += num;
+      });
+
+      // عرض البيانات
+      let html = `<h2>👤 ${found.name}</h2>`;
+      html += `<p>📘 المرحلة: ${found.cls}</p>`;
+      html += `<ul class="grades">`;
+      found.grades.forEach((g, i) => {
+        html += `<li>المادة ${i+1}: ${g}</li>`;
+      });
+      html += `</ul>`;
+      html += `<p class="total">📊 المجموع الكلي: ${total}</p>`;
+      html += `<a href="index.html">⬅ الرجوع للبحث</a>`;
+
+      document.getElementById("resultCard").innerHTML = html;
+    }
+
+    loadResult();
   </script>
 </body>
 </html>
