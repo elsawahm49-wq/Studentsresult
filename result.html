@@ -12,9 +12,7 @@
       text-align: center;
       padding: 30px;
     }
-    h1 {
-      color: #2c3e50;
-    }
+    h1 { color: #2c3e50; }
     .card {
       background: white;
       border-radius: 10px;
@@ -29,26 +27,11 @@
       border-collapse: collapse;
       margin-top: 15px;
     }
-    table, th, td {
-      border: 1px solid #ccc;
-    }
-    th, td {
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background: #3498db;
-      color: white;
-    }
-    .total {
-      font-weight: bold;
-      color: #2980b9;
-    }
-    .grade {
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 15px;
-    }
+    table, th, td { border: 1px solid #ccc; }
+    th, td { padding: 10px; text-align: center; }
+    th { background: #3498db; color: white; }
+    .total { font-weight: bold; color: #2980b9; }
+    .grade { font-size: 18px; font-weight: bold; margin-top: 15px; }
     .excellent { color: green; }
     .verygood { color: #2980b9; }
     .good { color: orange; }
@@ -63,9 +46,7 @@
       padding: 10px 20px;
       border-radius: 8px;
     }
-    a:hover {
-      background: #2980b9;
-    }
+    a:hover { background: #2980b9; }
   </style>
 </head>
 <body>
@@ -109,23 +90,38 @@
         return;
       }
 
-      // حساب المجموع (محاولة استخراج الأرقام)
-      let total = 0;
+      // حساب المجموع + النسبة
+      let totalGot = 0, totalMax = 0;
       found.grades.forEach(g => {
-        const num = parseFloat(g);
-        if (!isNaN(num)) total += num;
+        if (!g) return;
+        if (g.includes("/")) {
+          const parts = g.split("/");
+          const got = parseFloat(parts[0]);
+          const max = parseFloat(parts[1]);
+          if (!isNaN(got) && !isNaN(max)) {
+            totalGot += got;
+            totalMax += max;
+          }
+        } else {
+          const num = parseFloat(g);
+          if (!isNaN(num)) {
+            totalGot += num;
+            totalMax += 10; // نفترض 10 درجات لو مش مذكور
+          }
+        }
       });
 
-      // تقدير عام لفظي حسب المجموع
-      let gradeText = "";
-      let gradeClass = "";
-      if (total >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
-      else if (total >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
-      else if (total >= 60) { gradeText = "جيد"; gradeClass = "good"; }
-      else if (total >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
+      let percentage = totalMax > 0 ? Math.round((totalGot / totalMax) * 100) : 0;
+
+      // تقدير عام حسب النسبة
+      let gradeText = "", gradeClass = "";
+      if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
+      else if (percentage >= 80) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
+      else if (percentage >= 65) { gradeText = "جيد"; gradeClass = "good"; }
+      else if (percentage >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
       else { gradeText = "ضعيف"; gradeClass = "weak"; }
 
-      // عرض البيانات في جدول
+      // عرض البيانات
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
       html += `<table>
@@ -133,7 +129,7 @@
       found.grades.forEach((g, i) => {
         html += `<tr><td>الحصة ${i+1}</td><td>${g || "-"}</td></tr>`;
       });
-      html += `<tr><td class="total">المجموع الكلي</td><td class="total">${total}</td></tr>`;
+      html += `<tr><td class="total">النسبة</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
       html += `<a href="index.html">⬅ الرجوع للبحث</a>`;
