@@ -1,59 +1,104 @@
-<div id="studentResult"></div>
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نتيجة الطالب</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>📊 نتيجة الطالب</h1>
+  </header>
 
-<script>
-const urlParams = new URLSearchParams(window.location.search);
-const studentName = urlParams.get("name");
-const studentClass = urlParams.get("class");
+  <main class="result-box" id="studentResult">
+    <p>جاري تحميل النتيجة...</p>
+  </main>
 
-async function loadData() {
-  const response = await fetch("students_results.csv");
-  const text = await response.text();
-  const rows = text.split("\n").slice(1); // تجاهل العناوين
+  <footer>
+    <p>جميع الحقوق محفوظة © 2025</p>
+  </footer>
 
-  let found = false;
-  rows.forEach(row => {
-    const cols = row.split(",");
-    const name = cols[0]?.trim();
-    const cls = cols[1]?.trim();
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentName = urlParams.get("name");
+    const studentClass = urlParams.get("class");
 
-    if (name === studentName && cls === studentClass) {
-      found = true;
-      let total = 0, maxTotal = 0;
-      let table = "<table><tr><th>الحصة</th><th>الدرجة</th></tr>";
+    const classNames = {
+      "اولي-اعدادي": "الأولى الإعدادية",
+      "تانيه-اعدادي": "الثانية الإعدادية",
+      "تالته-اعدادي": "الثالثة الإعدادية",
+      "اولي-ثانوي": "الأولى الثانوية",
+      "تانيه-ثانوي": "الثانية الثانوية",
+      "تالته-ثانوي": "الثالثة الثانوية"
+    };
 
-      cols.slice(2).forEach((grade, i) => {
-        if (grade) {
-          const [got, max] = grade.split("/").map(x => parseInt(x));
-          total += got;
-          maxTotal += max;
-          table += `<tr><td>الحصة ${i+1}</td><td>${got} / ${max}</td></tr>`;
+    async function loadData() {
+      try {
+        const response = await fetch("students_results.csv");
+        const text = await response.text();
+        const rows = text.split("\n").slice(1); // تجاهل الصف الأول (العناوين)
+
+        let found = false;
+        rows.forEach(row => {
+          const cols = row.split(",");
+          const name = cols[0]?.trim();
+          const cls = cols[1]?.trim();
+
+          if (name === studentName && cls === studentClass) {
+            found = true;
+            const grades = cols.slice(2); // الباقي درجات
+
+            let table = "<table><tr><th>الحصة</th><th>الدرجة</th></tr>";
+            let total = 0, maxTotal = 0;
+
+            grades.forEach((g, i) => {
+              if (g && g.includes("/")) {
+                const [got, max] = g.split("/").map(x => x.trim());
+                total += parseFloat(got);
+                maxTotal += parseFloat(max);
+                table += `<tr><td>الحصة ${i + 1}</td><td>${got} / ${max}</td></tr>`;
+              }
+            });
+
+            const percent = (total / maxTotal) * 100;
+            let status = "";
+            if (percent >= 85) status = `<div class="grade excellent">🌟 ممتاز</div>`;
+            else if (percent >= 70) status = `<div class="grade verygood">👍 جيد جدًا</div>`;
+            else if (percent >= 50) status = `<div class="grade good">🙂 جيد</div>`;
+            else status = `<div class="grade weak">⚠️ ضعيف</div>`;
+
+            table += `
+              <tr><th>المجموع</th><td>${total} / ${maxTotal}</td></tr>
+              <tr><th>النسبة المئوية</th><td>${percent.toFixed(2)}%</td></tr>
+            `;
+            table += "</table>";
+
+            document.getElementById("studentResult").innerHTML = `
+              <h2>${studentName}</h2>
+              <h3>${classNames[studentClass] || studentClass}</h3>
+              ${table}
+              ${status}
+              <br>
+              <a href="index.html" class="back-btn">🔙 الرجوع للبحث</a>
+            `;
+          }
+        });
+
+        if (!found) {
+          document.getElementById("studentResult").innerHTML =
+            `<p style="color:red; font-weight:bold;">⚠️ لم يتم العثور على الطالب. تأكد من الاسم والمرحلة.</p>
+             <a href="index.html" class="back-btn">🔙 الرجوع للبحث</a>`;
         }
-      });
 
-      const percent = (total / maxTotal) * 100;
-      let status = "";
-      if (percent >= 85) status = `<div class="grade excellent">🌟 ممتاز</div>`;
-      else if (percent >= 70) status = `<div class="grade verygood">👍 جيد جدًا</div>`;
-      else if (percent >= 50) status = `<div class="grade good">🙂 جيد</div>`;
-      else status = `<div class="grade weak">⚠️ ضعيف</div>`;
-
-      table += `<tr><th>المجموع</th><td>${total} / ${maxTotal}</td></tr>`;
-      table += `<tr><th>النسبة المئوية</th><td>${percent.toFixed(2)}%</td></tr>`;
-      table += "</table>";
-
-      document.getElementById("studentResult").innerHTML = `
-        <h2>${name}</h2>
-        <h3>${cls}</h3>
-        ${table}
-        ${status}
-      `;
+      } catch (e) {
+        console.error("خطأ:", e);
+        document.getElementById("studentResult").innerHTML =
+          "<p style='color:red; font-weight:bold;'>❌ حدث خطأ أثناء تحميل البيانات</p>";
+      }
     }
-  });
 
-  if (!found) {
-    document.getElementById("studentResult").innerHTML =
-      `<p style="color:red; font-weight:bold;">⚠️ الطالب أو الصف غير موجود</p>`;
-  }
-}
-loadData();
-</script>
+    loadData();
+  </script>
+</body>
+</html>
