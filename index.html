@@ -1,85 +1,190 @@
-<script>
-// دالة لتطبيع الحروف العربية (إزالة الفروق)
-function normalizeArabic(str) {
-  return str
-    .replace(/[أإآا]/g, "ا")
-    .replace(/ى/g, "ي")
-    .replace(/ة/g, "ه")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نتائج الطلاب</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background: #f0f2f5;
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+    select, input {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin: 10px 0;
+      width: 250px;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    #nameField {
+      position: relative;
+      display: none;
+    }
+    .suggestions {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+      position: absolute;
+      width: 100%;
+      z-index: 10;
+      display: none;
+      text-align: right;
+    }
+    .suggestions li {
+      padding: 10px;
+      cursor: pointer;
+    }
+    .suggestions li:hover {
+      background: #3498db;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 البحث عن نتيجة الطالب</h1>
 
-let studentsByClass = {}; // نخزن الأسماء لكل صف
+  <label for="studentClass">اختر المرحلة:</label><br>
+  <select id="studentClass">
+    <option value="">-- اختر المرحلة --</option>
+    <option value="اولي-اعدادي">الأولى الإعدادية</option>
+    <option value="تانيه-اعدادي">الثانية الإعدادية</option>
+    <option value="تالته-اعدادي">الثالثة الإعدادية</option>
+    <option value="اولي-ثانوي">الأولى الثانوية</option>
+    <option value="تانيه-ثانوي">الثانية الثانوية</option>
+    <option value="تالته-ثانوي">الثالثة الثانوية</option>
+  </select>
 
-async function loadStudents() {
-  try {
-    const response = await fetch("students_results.csv");
-    const text = await response.text();
-    const rows = text.split("\n").slice(1);
+  <div id="nameField">
+    <label for="studentName">اسم الطالب:</label><br>
+    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
+    <ul id="suggestions" class="suggestions"></ul>
+  </div>
 
-    studentsByClass = {};
+  <br>
+  <button onclick="searchResult()">عرض النتيجة</button>
 
-    rows.forEach(row => {
-      const cols = row.split(",");
-      if (cols.length < 2) return;
-      const name = cols[0].trim();
-      const cls = cols[1].trim();
+  <script>
+    function normalizeArabic(str) {
+      return str
+        .replace(/[أإآا]/g, "ا")
+        .replace(/ى/g, "ي")
+        .replace(/ة/g, "ه")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
 
-      if (!studentsByClass[cls]) studentsByClass[cls] = [];
-      studentsByClass[cls].push(name);
+    let studentsByClass = {};
+
+    async function loadStudents() {
+      const response = await fetch("students_results.csv");
+      const text = await response.text();
+      const rows = text.split("\n").slice(1);
+
+      studentsByClass = {};
+      rows.forEach(row => {
+        const cols = row.split(",");
+        if (cols.length < 2) return;
+        const name = cols[0].trim();
+        const cls = cols[1].trim();
+
+        if (!studentsByClass[cls]) studentsByClass[cls] = [];
+        studentsByClass[cls].push(name);
+      });
+
+      for (let cls in studentsByClass) {
+        studentsByClass[cls] = [...new Set(studentsByClass[cls])].sort();
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadStudents();
+
+      const classSelect = document.getElementById("studentClass");
+      const nameField = document.getElementById("nameField");
+      const studentNameInput = document.getElementById("studentName");
+      const suggestionsBox = document.getElementById("suggestions");
+
+      classSelect.addEventListener("change", function() {
+        const selectedClass = this.value;
+        if (!selectedClass) {
+          nameField.style.display = "none";
+          return;
+        }
+        nameField.style.display = "block";
+        studentNameInput.value = "";
+        suggestionsBox.innerHTML = "";
+        suggestionsBox.style.display = "none";
+      });
+
+      studentNameInput.addEventListener("input", function() {
+        const val = normalizeArabic(this.value);
+        const selectedClass = classSelect.value;
+
+        if (!selectedClass || val.length === 0) {
+          suggestionsBox.style.display = "none";
+          return;
+        }
+
+        const filtered = studentsByClass[selectedClass].filter(n =>
+          normalizeArabic(n).includes(val)
+        );
+
+        suggestionsBox.innerHTML = "";
+        if (filtered.length > 0) {
+          filtered.forEach(n => {
+            const li = document.createElement("li");
+            li.textContent = n;
+            li.addEventListener("click", () => {
+              studentNameInput.value = n;
+              suggestionsBox.style.display = "none";
+            });
+            suggestionsBox.appendChild(li);
+          });
+          suggestionsBox.style.display = "block";
+        } else {
+          suggestionsBox.style.display = "none";
+        }
+      });
     });
 
-    // شيل التكرار
-    for (let cls in studentsByClass) {
-      studentsByClass[cls] = [...new Set(studentsByClass[cls])].sort();
+    function searchResult() {
+      const studentName = document.getElementById("studentName").value.trim();
+      const studentClass = document.getElementById("studentClass").value;
+
+      if (!studentName || !studentClass) {
+        alert("⚠️ من فضلك اختر المرحلة واكتب اسم الطالب.");
+        return;
+      }
+
+      window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}`;
     }
-
-  } catch (e) {
-    console.error("خطأ في تحميل الأسماء:", e);
-  }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  loadStudents();
-
-  const classSelect = document.getElementById("studentClass");
-  const nameField = document.getElementById("nameField");
-  const studentNameInput = document.getElementById("studentName");
-  const dataList = document.getElementById("namesList");
-
-  classSelect.addEventListener("change", function() {
-    const selectedClass = this.value;
-    if (!selectedClass) {
-      nameField.style.display = "none";
-      return;
-    }
-    nameField.style.display = "block";
-
-    // أول ما أختار الصف → امسح اللي فات
-    studentNameInput.value = "";
-    dataList.innerHTML = "";
-  });
-
-  studentNameInput.addEventListener("input", function() {
-    const val = normalizeArabic(this.value);
-    const selectedClass = classSelect.value;
-
-    if (!selectedClass || val.length === 0) {
-      dataList.innerHTML = "";
-      return;
-    }
-
-    // فلترة سريعة من اللي متخزن
-    const filtered = studentsByClass[selectedClass].filter(n =>
-      normalizeArabic(n).includes(val)
-    );
-
-    dataList.innerHTML = "";
-    filtered.forEach(n => {
-      const option = document.createElement("option");
-      option.value = n;
-      dataList.appendChild(option);
-    });
-  });
-});
-</script>
+  </script>
+</body>
+</html>
