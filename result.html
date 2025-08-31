@@ -15,6 +15,20 @@
     h1 {
       color: #2c3e50;
     }
+    .banner {
+      background:#2c3e50;
+      color:white;
+      padding:20px;
+      border-radius:8px;
+      margin-bottom:20px;
+      text-align:center;
+    }
+    .banner h1 {
+      margin:0;
+      font-size:32px;
+      font-weight:bold;
+      letter-spacing: 1px;
+    }
     .card {
       background: white;
       border-radius: 10px;
@@ -70,10 +84,8 @@
 </head>
 <body>
   <!-- العنوان الرئيسي -->
-  <div style="background:#2c3e50; color:white; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center;">
-    <h1 style="margin:0; font-size:28px;">
-      منصة مستر عبدالله التمادي
-    </h1>
+  <div class="banner">
+    <h1>منصة مستر عبدالله التمادي</h1>
   </div>
 
   <h1>📊 نتيجة الطالب</h1>
@@ -116,20 +128,25 @@
         return;
       }
 
-      // حساب المجموع (محاولة استخراج الأرقام)
-      let total = 0;
+      // حساب المجموع والنسبة المئوية
+      let total = 0, count = 0;
       found.grades.forEach(g => {
         const num = parseFloat(g);
-        if (!isNaN(num)) total += num;
+        if (!isNaN(num)) {
+          total += num;
+          count++;
+        }
       });
+      let percentage = count > 0 ? (total / (count * 100)) * 100 : 0;
+      percentage = percentage.toFixed(2); // خانتين عشريتين
 
-      // تقدير عام لفظي حسب المجموع
+      // تقدير عام لفظي حسب النسبة
       let gradeText = "";
       let gradeClass = "";
-      if (total >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
-      else if (total >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
-      else if (total >= 60) { gradeText = "جيد"; gradeClass = "good"; }
-      else if (total >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
+      if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
+      else if (percentage >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
+      else if (percentage >= 60) { gradeText = "جيد"; gradeClass = "good"; }
+      else if (percentage >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
       else { gradeText = "ضعيف"; gradeClass = "weak"; }
 
       // عرض البيانات في جدول
@@ -140,7 +157,7 @@
       found.grades.forEach((g, i) => {
         html += `<tr><td>الحصة ${i+1}</td><td>${g || "-"}</td></tr>`;
       });
-      html += `<tr><td class="total">المجموع الكلي</td><td class="total">${total}</td></tr>`;
+      html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
       html += `<a href="index.html">⬅ الرجوع للبحث</a>`;
