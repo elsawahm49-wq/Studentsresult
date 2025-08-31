@@ -91,8 +91,15 @@
 
     async function loadResult() {
       const studentName = getQueryParam("name");
-      const studentClass = getQueryParam("class");
+      const studentClassRaw = getQueryParam("class");
       const month = getQueryParam("month");
+
+      // خريطة تحويل القيم العربية إلى المفاتيح الداخلية
+      const classMap = {
+        "تالته-اعدادي": "3e",
+        "اولي-ثانوي": "1s"
+      };
+      const studentClass = classMap[studentClassRaw];
 
       if (!studentName || !studentClass || !month) {
         document.getElementById("resultCard").innerHTML = "❌ البيانات غير مكتملة!";
@@ -152,7 +159,7 @@
 
       // عرض البيانات في جدول
       let html = `<h2>👤 ${found.name}</h2>`;
-      html += `<p>📘 المرحلة: ${found.cls}</p>`;
+      html += `<p>📘 المرحلة: ${studentClassRaw}</p>`;
       html += `<p>🗓️ الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
