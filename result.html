@@ -13,17 +13,23 @@
       padding: 30px;
     }
     h1 {
-      color: #fff;
+      color: #2c3e50;
+    }
+    .banner {
       background: linear-gradient(90deg, #3498db, #2980b9);
-      padding: 15px;
-      border-radius: 8px;
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
       font-style: italic;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 25px;
     }
     .card {
       background: white;
       border-radius: 10px;
       padding: 20px;
-      max-width: 650px;
+      max-width: 600px;
       margin: 20px auto;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: right;
@@ -73,10 +79,27 @@
   </style>
 </head>
 <body>
+  <!-- البانر -->
+  <div class="banner" id="bannerText">🎓 منصة مستر عبدالله التمادي</div>
+
   <h1>📊 نتيجة الطالب</h1>
   <div id="resultCard" class="card">جاري التحميل...</div>
 
   <script>
+    // جمل افتتاحية متغيرة
+    const phrases = [
+      "🎓 منصة مستر عبدالله التمادي - معًا نحو التفوق",
+      "📘 العلم نور ومنصة مستر عبدالله التمادي دليلك",
+      "💡 كل يوم هو فرصة جديدة للتعلم",
+      "🏆 النجاح يبدأ بخطوة، ومنصتنا هي خطوتك الأولى",
+      "🌟 اجتهد اليوم، لتتفوق غدًا"
+    ];
+    document.addEventListener("DOMContentLoaded", () => {
+      const banner = document.getElementById("bannerText");
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+      banner.textContent = randomPhrase;
+    });
+
     function getQueryParam(param) {
       return new URLSearchParams(window.location.search).get(param);
     }
@@ -111,15 +134,17 @@
       });
 
       if (!found) {
-        document.getElementById("resultCard").innerHTML = "❌ لا توجد بيانات لهذا الطالب في هذا الشهر!";
+        document.getElementById("resultCard").innerHTML = "⚠️ لا توجد درجات مسجلة لهذا الشهر.";
         return;
       }
 
-      // حساب المجموع من شكل "x/y"
+      // حساب النسبة المئوية
       let total = 0, maxTotal = 0;
       found.grades.forEach(g => {
         if (g.includes("/")) {
-          const [score, max] = g.split("/").map(Number);
+          const parts = g.split("/");
+          const score = parseFloat(parts[0]);
+          const max = parseFloat(parts[1]);
           if (!isNaN(score) && !isNaN(max)) {
             total += score;
             maxTotal += max;
@@ -129,7 +154,7 @@
 
       const percentage = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : 0;
 
-      // تقدير عام لفظي
+      // تقدير عام
       let gradeText = "";
       let gradeClass = "";
       if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
@@ -138,15 +163,19 @@
       else if (percentage >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
       else { gradeText = "ضعيف"; gradeClass = "weak"; }
 
-      // عرض البيانات في جدول
+      // عرض البيانات
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
-      html += `<p>📅 الشهر: ${found.month}</p>`;
+      html += `<p>🗓 الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
+
+      // عرض 8 حصص ثابتة
       for (let i = 0; i < 8; i++) {
-        html += `<tr><td>الحصة ${i+1}</td><td>${found.grades[i] || "-"}</td></tr>`;
+        const g = found.grades[i] || "-";
+        html += `<tr><td>الحصة ${i+1}</td><td>${g}</td></tr>`;
       }
+
       html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
