@@ -2,189 +2,54 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نتائج الطلاب</title>
-  <link rel="stylesheet" href="style.css">
+  <title>البحث - الصف الثالث الإعدادي</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      direction: rtl;
-      background: #f0f2f5;
-      text-align: center;
-      padding: 30px;
-    }
-    h1 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-    }
-    select, input {
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin: 10px 0;
-      width: 250px;
-    }
-    button {
-      background: #3498db;
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 15px;
-    }
-    button:hover {
-      background: #2980b9;
-    }
-    #nameField {
-      position: relative;
-      display: none;
-    }
-    .suggestions {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      max-height: 150px;
-      overflow-y: auto;
-      position: absolute;
-      width: 100%;
-      z-index: 10;
-      display: none;
-      text-align: right;
-    }
-    .suggestions li {
-      padding: 10px;
-      cursor: pointer;
-    }
-    .suggestions li:hover {
-      background: #3498db;
-      color: white;
-    }
+    body { font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px; }
+    input { width: 300px; padding: 8px; font-size: 16px; }
+    ul { list-style: none; padding: 0; margin-top: 10px; }
+    li { padding: 5px; background: #f2f2f2; margin-bottom: 5px; border-radius: 5px; }
+    li:hover { background: #ddd; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h1>📊 البحث عن نتيجة الطالب</h1>
-
-  <label for="studentClass">اختر المرحلة:</label><br>
-  <select id="studentClass">
-    <option value="">-- اختر المرحلة --</option>
-    <option value="اولي-اعدادي">الأولى الإعدادية</option>
-    <option value="تانيه-اعدادي">الثانية الإعدادية</option>
-    <option value="تالته-اعدادي">الثالثة الإعدادية</option>
-    <option value="اولي-ثانوي">الأولى الثانوية</option>
-    <option value="تانيه-ثانوي">الثانية الثانوية</option>
-    <option value="تالته-ثانوي">الثالثة الثانوية</option>
-  </select>
-
-  <div id="nameField">
-    <label for="studentName">اسم الطالب:</label><br>
-    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
-    <ul id="suggestions" class="suggestions"></ul>
-  </div>
-
-  <br>
-  <button onclick="searchResult()">عرض النتيجة</button>
+  <h2>🔎 البحث في الصف الثالث الإعدادي</h2>
+  <input type="text" id="search" placeholder="اكتب اسم الطالب...">
+  <ul id="results"></ul>
 
   <script>
-    function normalizeArabic(str) {
-      return str
-        .replace(/[أإآا]/g, "ا")
-        .replace(/ى/g, "ي")
-        .replace(/ة/g, "ه")
-        .replace(/\s+/g, " ")
-        .trim();
-    }
+    let students = [];
 
-    let studentsByClass = {};
-
-    async function loadStudents() {
-      const response = await fetch("students_results.csv");
-      const text = await response.text();
-      const rows = text.split("\n").slice(1);
-
-      studentsByClass = {};
-      rows.forEach(row => {
-        const cols = row.split(",");
-        if (cols.length < 2) return;
-        const name = cols[0].trim();
-        const cls = cols[1].trim();
-
-        if (!studentsByClass[cls]) studentsByClass[cls] = [];
-        studentsByClass[cls].push(name);
+    // تحميل ملف CSV من المشروع
+    fetch("كشف_3_اعدادي_2026_نظيف.csv")
+      .then(response => response.text())
+      .then(data => {
+        // تقسيم الملف لأسطر
+        const rows = data.split("\n").slice(1); // نتجاهل العنوان "الاسم,درجة1..."
+        students = rows.map(row => {
+          const cols = row.split(",");
+          return {
+            name: cols[0]?.trim(),
+            grades: cols.slice(1).filter(x => x.trim() !== "")
+          };
+        });
       });
 
-      for (let cls in studentsByClass) {
-        studentsByClass[cls] = [...new Set(studentsByClass[cls])].sort();
-      }
-    }
+    // البحث الفوري
+    document.getElementById("search").addEventListener("input", function () {
+      const query = this.value.trim();
+      const resultsEl = document.getElementById("results");
+      resultsEl.innerHTML = "";
 
-    document.addEventListener("DOMContentLoaded", () => {
-      loadStudents();
+      if (query.length === 0) return;
 
-      const classSelect = document.getElementById("studentClass");
-      const nameField = document.getElementById("nameField");
-      const studentNameInput = document.getElementById("studentName");
-      const suggestionsBox = document.getElementById("suggestions");
+      const matches = students.filter(s => s.name && s.name.includes(query));
 
-      classSelect.addEventListener("change", function() {
-        const selectedClass = this.value;
-        if (!selectedClass) {
-          nameField.style.display = "none";
-          return;
-        }
-        nameField.style.display = "block";
-        studentNameInput.value = "";
-        suggestionsBox.innerHTML = "";
-        suggestionsBox.style.display = "none";
-      });
-
-      studentNameInput.addEventListener("input", function() {
-        const val = normalizeArabic(this.value);
-        const selectedClass = classSelect.value;
-
-        if (!selectedClass || val.length === 0) {
-          suggestionsBox.style.display = "none";
-          return;
-        }
-
-        const filtered = studentsByClass[selectedClass].filter(n =>
-          normalizeArabic(n).includes(val)
-        );
-
-        suggestionsBox.innerHTML = "";
-        if (filtered.length > 0) {
-          filtered.forEach(n => {
-            const li = document.createElement("li");
-            li.textContent = n;
-            li.addEventListener("click", () => {
-              studentNameInput.value = n;
-              suggestionsBox.style.display = "none";
-            });
-            suggestionsBox.appendChild(li);
-          });
-          suggestionsBox.style.display = "block";
-        } else {
-          suggestionsBox.style.display = "none";
-        }
+      matches.forEach(s => {
+        const li = document.createElement("li");
+        li.textContent = s.name + " → " + s.grades.join(" | ");
+        resultsEl.appendChild(li);
       });
     });
-
-    function searchResult() {
-      const studentName = document.getElementById("studentName").value.trim();
-      const studentClass = document.getElementById("studentClass").value;
-
-      if (!studentName || !studentClass) {
-        alert("⚠️ من فضلك اختر المرحلة واكتب اسم الطالب.");
-        return;
-      }
-
-      window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}`;
-    }
   </script>
 </body>
 </html>
