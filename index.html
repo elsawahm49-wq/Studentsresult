@@ -2,7 +2,7 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>البحث - الصف الثالث الإعدادي</title>
+  <title>🔎 البحث - الصف الثالث الإعدادي</title>
   <style>
     body { font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px; }
     input { width: 300px; padding: 8px; font-size: 16px; }
@@ -19,6 +19,19 @@
   <script>
     let students = [];
 
+    // دالة لتطبيع النص العربي (إزالة همزات وتشكيل ومسافات زائدة)
+    function normalizeArabic(str) {
+      return str
+        .replace(/[إأآا]/g, "ا")
+        .replace(/ى/g, "ي")
+        .replace(/ؤ/g, "و")
+        .replace(/ئ/g, "ي")
+        .replace(/[ًٌٍَُِّْ]/g, "") // إزالة التشكيل
+        .replace(/\s+/g, " ")       // مسافات متكررة
+        .trim()
+        .toLowerCase();
+    }
+
     // تحميل ملف CSV من المشروع
     fetch("كشف_3_اعدادي_2026_نظيف.csv")
       .then(response => response.text())
@@ -29,6 +42,7 @@
           const cols = row.split(",");
           return {
             name: cols[0]?.trim(),
+            normName: normalizeArabic(cols[0] || ""),
             grades: cols.slice(1).filter(x => x.trim() !== "")
           };
         });
@@ -36,13 +50,13 @@
 
     // البحث الفوري
     document.getElementById("search").addEventListener("input", function () {
-      const query = this.value.trim();
+      const query = normalizeArabic(this.value);
       const resultsEl = document.getElementById("results");
       resultsEl.innerHTML = "";
 
       if (query.length === 0) return;
 
-      const matches = students.filter(s => s.name && s.name.includes(query));
+      const matches = students.filter(s => s.normName.includes(query));
 
       matches.forEach(s => {
         const li = document.createElement("li");
