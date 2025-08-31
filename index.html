@@ -26,7 +26,6 @@
       font-style: italic;
       font-size: 28px;
       font-weight: bold;
-      text-align: center;
     }
     select, input {
       padding: 10px;
@@ -98,6 +97,18 @@
     <option value="تالته-ثانوي">الثالثة الثانوية</option>
   </select>
 
+  <br>
+  <label for="examMonth">اختر الشهر:</label><br>
+  <select id="examMonth">
+    <option value="">-- اختر الشهر --</option>
+    <option value="يناير">يناير</option>
+    <option value="فبراير">فبراير</option>
+    <option value="مارس">مارس</option>
+    <option value="ابريل">أبريل</option>
+    <option value="مايو">مايو</option>
+    <option value="يونيو">يونيو</option>
+  </select>
+
   <div id="nameField">
     <label for="studentName">اسم الطالب:</label><br>
     <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
@@ -127,16 +138,16 @@
       studentsByClass = {};
       rows.forEach(row => {
         const cols = row.split(",");
-        if (cols.length < 2) return;
+        if (cols.length < 3) return;
         const name = cols[0].trim();
         const cls = cols[1].trim();
-        const grades = cols.slice(2); // باقي الأعمدة درجات
+        const month = cols[2].trim();
 
         if (!studentsByClass[cls]) studentsByClass[cls] = [];
-        studentsByClass[cls].push({ name, grades });
+        studentsByClass[cls].push({ name, month });
       });
 
-      // نشيل التكرارات ونرتب
+      // شيل التكرارات ورتب
       for (let cls in studentsByClass) {
         const seen = new Set();
         studentsByClass[cls] = studentsByClass[cls].filter(s => {
@@ -156,8 +167,7 @@
       const suggestionsBox = document.getElementById("suggestions");
 
       classSelect.addEventListener("change", function() {
-        const selectedClass = this.value;
-        if (!selectedClass) {
+        if (!this.value) {
           nameField.style.display = "none";
           return;
         }
@@ -178,7 +188,7 @@
 
         const filtered = studentsByClass[selectedClass]
           .filter(s => normalizeArabic(s.name).includes(val))
-          .slice(0, 5); // أول 5 اقتراحات
+          .slice(0, 5);
 
         suggestionsBox.innerHTML = "";
         if (filtered.length > 0) {
@@ -198,17 +208,34 @@
       });
     });
 
-    function searchResult() {
+    // ✅ التحقق من وجود الشهر قبل الفتح
+    async function searchResult() {
       const studentName = document.getElementById("studentName").value.trim();
       const studentClass = document.getElementById("studentClass").value;
+      const examMonth = document.getElementById("examMonth").value;
 
-      if (!studentName || !studentClass) {
-        alert("⚠️ من فضلك اختر المرحلة واكتب اسم الطالب.");
+      if (!studentName || !studentClass || !examMonth) {
+        alert("⚠️ من فضلك اختر المرحلة والشهر واكتب اسم الطالب.");
         return;
       }
 
-      // هننقل الاسم + الصف للصفحة التانية
-      window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}`;
+      const response = await fetch("students_results.csv");
+      const text = await response.text();
+      const rows = text.split("\n").slice(1);
+
+      const exists = rows.some(row => {
+        const cols = row.split(",");
+        return cols[1]?.trim() === studentClass &&
+               cols[2]?.trim() === examMonth;
+      });
+
+      if (!exists) {
+        alert("⛔ لم يتم تسجيل الدرجات لشهر " + examMonth + " بعد.");
+        return;
+      }
+
+      window.location.href =
+        `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(examMonth)}`;
     }
   </script>
 </body>
