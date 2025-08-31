@@ -12,18 +12,19 @@
       text-align: center;
       padding: 30px;
     }
-    h1 {
-      color: #2c3e50;
-    }
     .banner {
-      background: linear-gradient(90deg, #3498db, #2980b9);
+      background: #3498db;
       color: white;
       font-size: 22px;
       font-weight: bold;
       font-style: italic;
       padding: 15px;
       border-radius: 10px;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    h1 {
+      color: #2c3e50;
     }
     .card {
       background: white;
@@ -79,27 +80,11 @@
   </style>
 </head>
 <body>
-  <!-- البانر -->
-  <div class="banner" id="bannerText">🎓 منصة مستر عبدالله التمادي</div>
-
+  <div class="banner">📌 منصة مستر عبدالله التمادي</div>
   <h1>📊 نتيجة الطالب</h1>
   <div id="resultCard" class="card">جاري التحميل...</div>
 
   <script>
-    // جمل افتتاحية متغيرة
-    const phrases = [
-      "🎓 منصة مستر عبدالله التمادي - معًا نحو التفوق",
-      "📘 العلم نور ومنصة مستر عبدالله التمادي دليلك",
-      "💡 كل يوم هو فرصة جديدة للتعلم",
-      "🏆 النجاح يبدأ بخطوة، ومنصتنا هي خطوتك الأولى",
-      "🌟 اجتهد اليوم، لتتفوق غدًا"
-    ];
-    document.addEventListener("DOMContentLoaded", () => {
-      const banner = document.getElementById("bannerText");
-      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-      banner.textContent = randomPhrase;
-    });
-
     function getQueryParam(param) {
       return new URLSearchParams(window.location.search).get(param);
     }
@@ -107,76 +92,73 @@
     async function loadResult() {
       const studentName = getQueryParam("name");
       const studentClass = getQueryParam("class");
-      const studentMonth = getQueryParam("month");
+      const month = getQueryParam("month");
 
-      if (!studentName || !studentClass || !studentMonth) {
+      if (!studentName || !studentClass || !month) {
         document.getElementById("resultCard").innerHTML = "❌ البيانات غير مكتملة!";
         return;
       }
 
-      const response = await fetch("students_results.csv");
+      // نحدد ملف CSV بناءً على الصف
+      const files = {
+        "3e": "students_results_3e.csv",
+        "1s": "students_results_1thanwy.csv"
+      };
+
+      const response = await fetch(files[studentClass]);
       const text = await response.text();
       const rows = text.split("\n").slice(1);
 
       let found = null;
       rows.forEach(row => {
         const cols = row.split(",");
-        if (cols.length < 11) return; // نتأكد إن فيه 8 حصص بعد العمود 3
+        if (cols.length < 3) return;
 
         const name = cols[0].trim();
         const cls = cols[1].trim();
-        const month = cols[2].trim();
-        // ناخد 8 حصص بالترتيب زي ما في CSV
-        const grades = cols.slice(3, 11).map(x => x.trim());
+        const rowMonth = cols[2].trim();
+        const grades = cols.slice(3).map(x => x.trim());
 
-        if (name === studentName && cls === studentClass && month === studentMonth) {
-          found = { name, cls, month, grades };
+        if (name === studentName && cls === studentClass && rowMonth === month) {
+          found = { name, cls, month: rowMonth, grades };
         }
       });
 
       if (!found) {
-        document.getElementById("resultCard").innerHTML = "⚠️ لا توجد درجات مسجلة لهذا الشهر.";
+        document.getElementById("resultCard").innerHTML = "❌ لم يتم العثور على الطالب في هذا الشهر!";
         return;
       }
 
       // حساب النسبة المئوية
       let total = 0, maxTotal = 0;
       found.grades.forEach(g => {
-        if (g.includes("/")) {
-          const parts = g.split("/");
-          const score = parseFloat(parts[0]);
-          const max = parseFloat(parts[1]);
-          if (!isNaN(score) && !isNaN(max)) {
-            total += score;
+        if (g && g.includes("/")) {
+          const [num, max] = g.split("/").map(x => parseFloat(x));
+          if (!isNaN(num) && !isNaN(max)) {
+            total += num;
             maxTotal += max;
           }
         }
       });
-
       const percentage = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : 0;
 
-      // تقدير عام
-      let gradeText = "";
-      let gradeClass = "";
+      // تقدير عام لفظي حسب النسبة
+      let gradeText = "", gradeClass = "";
       if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
       else if (percentage >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
       else if (percentage >= 60) { gradeText = "جيد"; gradeClass = "good"; }
       else if (percentage >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
       else { gradeText = "ضعيف"; gradeClass = "weak"; }
 
-      // عرض البيانات
+      // عرض البيانات في جدول
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
-      html += `<p>🗓 الشهر: ${found.month}</p>`;
+      html += `<p>🗓️ الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
-
-      // عرض 8 حصص بالترتيب
-      for (let i = 0; i < 8; i++) {
-        const g = found.grades[i] || "-";
-        html += `<tr><td>الحصة ${i+1}</td><td>${g}</td></tr>`;
-      }
-
+      found.grades.slice(0,8).forEach((g, i) => {
+        html += `<tr><td>الحصة ${i+1}</td><td>${g || "-"}</td></tr>`;
+      });
       html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
