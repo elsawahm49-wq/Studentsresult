@@ -1,43 +1,109 @@
-<input list="studentsList" id="studentName" placeholder="اكتب اسم الطالب"/>
-<datalist id="studentsList"></datalist>
-
-<select id="classSelect">
-  <option value="اولي-اعدادي">الأولى الإعدادية</option>
-  <option value="تانيه-اعدادي">الثانية الإعدادية</option>
-  <option value="تالته-اعدادي">الثالثة الإعدادية</option>
-  <option value="اولي-ثانوي">الأولى الثانوية</option>
-  <option value="تانيه-ثانوي">الثانية الثانوية</option>
-  <option value="تالته-ثانوي">الثالثة الثانوية</option>
-</select>
-
-<button onclick="searchResult()">عرض النتيجة</button>
-
-<script>
-async function loadNames() {
-  const response = await fetch("students_results.csv");
-  const text = await response.text();
-  const rows = text.split("\n").slice(1); // تجاهل أول صف (العناوين)
-
-  const datalist = document.getElementById("studentsList");
-  rows.forEach(row => {
-    const cols = row.split(",");
-    const name = cols[0]?.trim();
-    if (name) {
-      let option = document.createElement("option");
-      option.value = name;
-      datalist.appendChild(option);
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>البحث عن نتيجة الطالب</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      text-align: center;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
     }
-  });
-}
-loadNames();
+    h1 {
+      background: #2c3e50;
+      color: white;
+      padding: 15px;
+      margin: 0;
+    }
+    .search-box {
+      margin: 40px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 400px;
+    }
+    input, select, button {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background: #2c3e50;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #34495e;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔎 البحث عن النتيجة</h1>
 
-function searchResult() {
-  const name = document.getElementById("studentName").value;
-  const className = document.getElementById("classSelect").value;
-  if (name && className) {
-    window.location.href = `result.html?name=${encodeURIComponent(name)}&class=${encodeURIComponent(className)}`;
-  } else {
-    alert("⚠️ برجاء إدخال الاسم واختيار الصف الدراسي");
-  }
-}
-</script>
+  <div class="search-box">
+    <label for="studentName">اسم الطالب:</label><br>
+    <input list="studentsList" id="studentName" placeholder="اكتب اسم الطالب"
+           autocomplete="off" spellcheck="false">
+    <datalist id="studentsList"></datalist>
+
+    <label for="studentClass">اختر المرحلة:</label><br>
+    <select id="studentClass">
+      <option value="اولي-اعدادي">الأولى الإعدادية</option>
+      <option value="تانيه-اعدادي">الثانية الإعدادية</option>
+      <option value="تالته-اعدادي">الثالثة الإعدادية</option>
+      <option value="اولي-ثانوي">الأولى الثانوية</option>
+      <option value="تانيه-ثانوي">الثانية الثانوية</option>
+      <option value="تالته-ثانوي">الثالثة الثانوية</option>
+    </select>
+
+    <button onclick="searchResult()">عرض النتيجة</button>
+  </div>
+
+  <script>
+    // تحميل الأسماء من CSV
+    async function loadNames() {
+      try {
+        const response = await fetch("students_results.csv");
+        const text = await response.text();
+        const rows = text.split("\n").slice(1); // تجاهل أول صف (العناوين)
+
+        const datalist = document.getElementById("studentsList");
+        rows.forEach(row => {
+          const cols = row.split(",");
+          const name = cols[0]?.trim();
+          if (name) {
+            let option = document.createElement("option");
+            option.value = name;
+            datalist.appendChild(option);
+          }
+        });
+      } catch (e) {
+        console.error("خطأ في تحميل الأسماء:", e);
+      }
+    }
+    loadNames();
+
+    // توجيه لصفحة النتيجة
+    function searchResult() {
+      const name = document.getElementById("studentName").value.trim();
+      const cls = document.getElementById("studentClass").value;
+      if (name) {
+        window.location.href = `result.html?name=${encodeURIComponent(name)}&class=${cls}`;
+      } else {
+        alert("من فضلك أدخل اسم الطالب");
+      }
+    }
+  </script>
+</body>
+</html>
