@@ -85,8 +85,27 @@
   <label for="studentClass">اختر المرحلة:</label><br>
   <select id="studentClass">
     <option value="">-- اختر المرحلة --</option>
-    <option value="3e">الثالثة الإعدادية</option>
-    <option value="1s">الأولى الثانوية</option>
+    <option value="تالته-اعدادي">الثالثة الإعدادية</option>
+    <option value="اولي-ثانوي">الأولى الثانوية</option>
+  </select>
+
+  <br>
+
+  <label for="studentMonth">اختر الشهر:</label><br>
+  <select id="studentMonth">
+    <option value="">-- اختر الشهر --</option>
+    <option value="يناير">يناير</option>
+    <option value="فبراير">فبراير</option>
+    <option value="مارس">مارس</option>
+    <option value="ابريل">أبريل</option>
+    <option value="مايو">مايو</option>
+    <option value="يونيو">يونيو</option>
+    <option value="يوليو">يوليو</option>
+    <option value="اغسطس">أغسطس</option>
+    <option value="سبتمبر">سبتمبر</option>
+    <option value="اكتوبر">أكتوبر</option>
+    <option value="نوفمبر">نوفمبر</option>
+    <option value="ديسمبر">ديسمبر</option>
   </select>
 
   <div id="nameField">
@@ -94,23 +113,6 @@
     <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
     <ul id="suggestions" class="suggestions"></ul>
   </div>
-
-  <label for="month">اختر الشهر:</label><br>
-  <select id="month">
-    <option value="">-- اختر الشهر --</option>
-    <option value="يناير">يناير</option>
-    <option value="فبراير">فبراير</option>
-    <option value="مارس">مارس</option>
-    <option value="ابريل">ابريل</option>
-    <option value="مايو">مايو</option>
-    <option value="يونيو">يونيو</option>
-    <option value="يوليو">يوليو</option>
-    <option value="اغسطس">اغسطس</option>
-    <option value="سبتمبر">سبتمبر</option>
-    <option value="اكتوبر">اكتوبر</option>
-    <option value="نوفمبر">نوفمبر</option>
-    <option value="ديسمبر">ديسمبر</option>
-  </select>
 
   <br>
   <button onclick="searchResult()">عرض النتيجة</button>
@@ -126,43 +128,52 @@
     }
 
     let studentsByClass = {};
-    const files = {
-      "3e": "students_results_3e.csv",
-      "1s": "students_results_1thanwy.csv"
-    };
 
-    async function loadStudents(cls) {
-      if (!files[cls]) return;
-      const response = await fetch(files[cls]);
-      const text = await response.text();
-      const rows = text.split("\n").slice(1);
+    async function loadStudents() {
+      // هنحمّل الملفات كلها
+      const files = {
+        "تالته-اعدادي": "students_results_3e.csv",
+        "اولي-ثانوي": "students_results_1thanwy.csv"
+      };
 
-      studentsByClass[cls] = [];
-      rows.forEach(row => {
-        const cols = row.split(",");
-        if (cols.length < 3) return;
-        const name = cols[0].trim();
-        const gradeClass = cols[1].trim();
-        const month = cols[2].trim();
-        const grades = cols.slice(3);
+      studentsByClass = {};
 
-        studentsByClass[cls].push({ name, gradeClass, month, grades });
-      });
+      for (let cls in files) {
+        const response = await fetch(files[cls]);
+        const text = await response.text();
+        const rows = text.split("\n").slice(1);
+
+        studentsByClass[cls] = [];
+        rows.forEach(row => {
+          const cols = row.split(",");
+          if (cols.length < 2) return;
+          const name = cols[0].trim();
+          const c = cols[1].trim();
+          const month = cols[2] ? cols[2].trim() : "";
+          if (c === cls && month) {
+            studentsByClass[cls].push(name);
+          }
+        });
+
+        // نشيل التكرارات ونرتب
+        studentsByClass[cls] = [...new Set(studentsByClass[cls])].sort((a, b) => a.localeCompare(b, "ar"));
+      }
     }
 
     document.addEventListener("DOMContentLoaded", () => {
+      loadStudents();
+
       const classSelect = document.getElementById("studentClass");
       const nameField = document.getElementById("nameField");
       const studentNameInput = document.getElementById("studentName");
       const suggestionsBox = document.getElementById("suggestions");
 
-      classSelect.addEventListener("change", async function() {
+      classSelect.addEventListener("change", function() {
         const selectedClass = this.value;
         if (!selectedClass) {
           nameField.style.display = "none";
           return;
         }
-        await loadStudents(selectedClass);
         nameField.style.display = "block";
         studentNameInput.value = "";
         suggestionsBox.innerHTML = "";
@@ -179,16 +190,16 @@
         }
 
         const filtered = studentsByClass[selectedClass]
-          .filter(s => normalizeArabic(s.name).includes(val))
+          .filter(s => normalizeArabic(s).includes(val))
           .slice(0, 5);
 
         suggestionsBox.innerHTML = "";
         if (filtered.length > 0) {
           filtered.forEach(s => {
             const li = document.createElement("li");
-            li.textContent = s.name;
+            li.textContent = s;
             li.addEventListener("click", () => {
-              studentNameInput.value = s.name;
+              studentNameInput.value = s;
               suggestionsBox.style.display = "none";
             });
             suggestionsBox.appendChild(li);
@@ -203,10 +214,10 @@
     function searchResult() {
       const studentName = document.getElementById("studentName").value.trim();
       const studentClass = document.getElementById("studentClass").value;
-      const month = document.getElementById("month").value;
+      const month = document.getElementById("studentMonth").value;
 
       if (!studentName || !studentClass || !month) {
-        alert("⚠️ من فضلك اختر المرحلة واكتب اسم الطالب واختر الشهر.");
+        alert("⚠️ من فضلك اختر المرحلة والشهر واكتب اسم الطالب.");
         return;
       }
 
