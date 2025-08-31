@@ -30,7 +30,7 @@
       background: white;
       border-radius: 10px;
       padding: 20px;
-      max-width: 600px;
+      max-width: 650px;
       margin: 20px auto;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: right;
@@ -94,40 +94,39 @@
       const studentClassRaw = getQueryParam("class");
       const month = getQueryParam("month");
 
-      // خريطة تحويل القيم العربية إلى المفاتيح الداخلية
-      const classMap = {
-        "تالته-اعدادي": "3e",
-        "اولي-ثانوي": "1s"
-      };
-      const studentClass = classMap[studentClassRaw];
-
-      if (!studentName || !studentClass || !month) {
+      if (!studentName || !studentClassRaw || !month) {
         document.getElementById("resultCard").innerHTML = "❌ البيانات غير مكتملة!";
         return;
       }
 
-      // نحدد ملف CSV بناءً على الصف
+      // ربط المراحل بملفات CSV
       const files = {
-        "3e": "students_results_3e.csv",
-        "1s": "students_results_1thanwy.csv"
+        "تالته-اعدادي": "students_results_3e.csv",
+        "اولي-ثانوي": "students_results_1thanwy.csv"
       };
 
-      const response = await fetch(files[studentClass]);
+      const file = files[studentClassRaw];
+      if (!file) {
+        document.getElementById("resultCard").innerHTML = "❌ لم يتم العثور على ملف المرحلة!";
+        return;
+      }
+
+      const response = await fetch(file);
       const text = await response.text();
       const rows = text.split("\n").slice(1);
 
       let found = null;
       rows.forEach(row => {
         const cols = row.split(",");
-        if (cols.length < 3) return;
+        if (cols.length < 4) return;
 
         const name = cols[0].trim();
         const cls = cols[1].trim();
         const rowMonth = cols[2].trim();
         const grades = cols.slice(3).map(x => x.trim());
 
-        if (name === studentName && cls === studentClass && rowMonth === month) {
-          found = { name, cls, month: rowMonth, grades };
+        if (name === studentName && cls === studentClassRaw && rowMonth === month) {
+          found = { name, cls, grades, month: rowMonth };
         }
       });
 
@@ -139,34 +138,34 @@
       // حساب النسبة المئوية
       let total = 0, maxTotal = 0;
       found.grades.forEach(g => {
-        if (g && g.includes("/")) {
-          const [num, max] = g.split("/").map(x => parseFloat(x));
-          if (!isNaN(num) && !isNaN(max)) {
-            total += num;
+        if (g.includes("/")) {
+          const [score, max] = g.split("/").map(Number);
+          if (!isNaN(score) && !isNaN(max)) {
+            total += score;
             maxTotal += max;
           }
         }
       });
-      const percentage = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : 0;
+      const percent = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : 0;
 
-      // تقدير عام لفظي حسب النسبة
+      // تقدير عام
       let gradeText = "", gradeClass = "";
-      if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
-      else if (percentage >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
-      else if (percentage >= 60) { gradeText = "جيد"; gradeClass = "good"; }
-      else if (percentage >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
+      if (percent >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
+      else if (percent >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
+      else if (percent >= 60) { gradeText = "جيد"; gradeClass = "good"; }
+      else if (percent >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
       else { gradeText = "ضعيف"; gradeClass = "weak"; }
 
-      // عرض البيانات في جدول
+      // عرض البيانات
       let html = `<h2>👤 ${found.name}</h2>`;
-      html += `<p>📘 المرحلة: ${studentClassRaw}</p>`;
+      html += `<p>📘 المرحلة: ${found.cls}</p>`;
       html += `<p>🗓️ الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
-      found.grades.slice(0,8).forEach((g, i) => {
+      found.grades.forEach((g, i) => {
         html += `<tr><td>الحصة ${i+1}</td><td>${g || "-"}</td></tr>`;
       });
-      html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage}%</td></tr>`;
+      html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percent}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
       html += `<a href="index.html">⬅ الرجوع للبحث</a>`;
