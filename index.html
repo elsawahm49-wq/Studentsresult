@@ -2,129 +2,189 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>🔎 البحث - المرحلة الإعدادية</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نتائج الطلاب</title>
+  <link rel="stylesheet" href="style.css">
   <style>
-    body { font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px; }
-    select, input, button { padding: 8px; font-size: 16px; margin: 5px 0; }
-    input { width: 300px; }
-    button { background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:disabled { background: #999; cursor: not-allowed; }
-    button:hover:not(:disabled) { background: #45a049; }
-    ul { list-style: none; padding: 0; margin-top: 10px; }
-    li { padding: 5px; background: #f2f2f2; margin-bottom: 5px; border-radius: 5px; }
-    li:hover { background: #ddd; cursor: pointer; }
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background: #f0f2f5;
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+    select, input {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin: 10px 0;
+      width: 250px;
+    }
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    #nameField {
+      position: relative;
+      display: none;
+    }
+    .suggestions {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+      position: absolute;
+      width: 100%;
+      z-index: 10;
+      display: none;
+      text-align: right;
+    }
+    .suggestions li {
+      padding: 10px;
+      cursor: pointer;
+    }
+    .suggestions li:hover {
+      background: #3498db;
+      color: white;
+    }
   </style>
 </head>
 <body>
-  <h2>🔎 البحث في المرحلة الإعدادية</h2>
+  <h1>📊 البحث عن نتيجة الطالب</h1>
 
-  <label for="grade">اختر الصف:</label>
-  <select id="grade">
-    <option value="">-- اختر الصف --</option>
-    <option value="كشف_1_اعدادي.csv">الأول الإعدادي</option>
-    <option value="كشف_2_اعدادي.csv">الثاني الإعدادي</option>
-    <option value="كشف_3_اعدادي_2026_نظيف.csv">الثالث الإعدادي</option>
+  <label for="studentClass">اختر المرحلة:</label><br>
+  <select id="studentClass">
+    <option value="">-- اختر المرحلة --</option>
+    <option value="اولي-اعدادي">الأولى الإعدادية</option>
+    <option value="تانيه-اعدادي">الثانية الإعدادية</option>
+    <option value="تالته-اعدادي">الثالثة الإعدادية</option>
+    <option value="اولي-ثانوي">الأولى الثانوية</option>
+    <option value="تانيه-ثانوي">الثانية الثانوية</option>
+    <option value="تالته-ثانوي">الثالثة الثانوية</option>
   </select>
 
-  <br>
-  <input type="text" id="search" placeholder="اكتب اسم الطالب...">
-  <button id="showResults" disabled>عرض النتيجة</button>
+  <div id="nameField">
+    <label for="studentName">اسم الطالب:</label><br>
+    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
+    <ul id="suggestions" class="suggestions"></ul>
+  </div>
 
-  <ul id="suggestions"></ul>
-  <ul id="results"></ul>
+  <br>
+  <button onclick="searchResult()">عرض النتيجة</button>
 
   <script>
-    let students = [];
-
-    // دالة لتطبيع النص العربي (إزالة همزات وتشكيل ومسافات زائدة)
     function normalizeArabic(str) {
       return str
-        .replace(/[إأآا]/g, "ا")
+        .replace(/[أإآا]/g, "ا")
         .replace(/ى/g, "ي")
-        .replace(/ؤ/g, "و")
-        .replace(/ئ/g, "ي")
-        .replace(/[ًٌٍَُِّْ]/g, "") // إزالة التشكيل
-        .replace(/\s+/g, " ")       // مسافات متكررة
-        .trim()
-        .toLowerCase();
+        .replace(/ة/g, "ه")
+        .replace(/\s+/g, " ")
+        .trim();
     }
 
-    // تحميل ملف CSV للصف المحدد
-    function loadCSV(fileName) {
-      if (!fileName) {
-        students = [];
-        document.getElementById("showResults").disabled = true;
-        return;
+    let studentsByClass = {};
+
+    async function loadStudents() {
+      const response = await fetch("students_results.csv");
+      const text = await response.text();
+      const rows = text.split("\n").slice(1);
+
+      studentsByClass = {};
+      rows.forEach(row => {
+        const cols = row.split(",");
+        if (cols.length < 2) return;
+        const name = cols[0].trim();
+        const cls = cols[1].trim();
+
+        if (!studentsByClass[cls]) studentsByClass[cls] = [];
+        studentsByClass[cls].push(name);
+      });
+
+      for (let cls in studentsByClass) {
+        studentsByClass[cls] = [...new Set(studentsByClass[cls])].sort();
       }
-      fetch(fileName)
-        .then(response => response.text())
-        .then(data => {
-          const rows = data.split("\n").slice(1);
-          students = rows.map(row => {
-            const cols = row.split(",");
-            return {
-              name: cols[0]?.trim(),
-              normName: normalizeArabic(cols[0] || ""),
-              grades: cols.slice(1).filter(x => x.trim() !== "")
-            };
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadStudents();
+
+      const classSelect = document.getElementById("studentClass");
+      const nameField = document.getElementById("nameField");
+      const studentNameInput = document.getElementById("studentName");
+      const suggestionsBox = document.getElementById("suggestions");
+
+      classSelect.addEventListener("change", function() {
+        const selectedClass = this.value;
+        if (!selectedClass) {
+          nameField.style.display = "none";
+          return;
+        }
+        nameField.style.display = "block";
+        studentNameInput.value = "";
+        suggestionsBox.innerHTML = "";
+        suggestionsBox.style.display = "none";
+      });
+
+      studentNameInput.addEventListener("input", function() {
+        const val = normalizeArabic(this.value);
+        const selectedClass = classSelect.value;
+
+        if (!selectedClass || val.length === 0) {
+          suggestionsBox.style.display = "none";
+          return;
+        }
+
+        const filtered = studentsByClass[selectedClass].filter(n =>
+          normalizeArabic(n).includes(val)
+        );
+
+        suggestionsBox.innerHTML = "";
+        if (filtered.length > 0) {
+          filtered.forEach(n => {
+            const li = document.createElement("li");
+            li.textContent = n;
+            li.addEventListener("click", () => {
+              studentNameInput.value = n;
+              suggestionsBox.style.display = "none";
+            });
+            suggestionsBox.appendChild(li);
           });
-          document.getElementById("showResults").disabled = false;
-        });
+          suggestionsBox.style.display = "block";
+        } else {
+          suggestionsBox.style.display = "none";
+        }
+      });
+    });
+
+    function searchResult() {
+      const studentName = document.getElementById("studentName").value.trim();
+      const studentClass = document.getElementById("studentClass").value;
+
+      if (!studentName || !studentClass) {
+        alert("⚠️ من فضلك اختر المرحلة واكتب اسم الطالب.");
+        return;
+      }
+
+      window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}`;
     }
-
-    // عند اختيار الصف
-    document.getElementById("grade").addEventListener("change", function () {
-      loadCSV(this.value);
-      document.getElementById("results").innerHTML = "";
-      document.getElementById("suggestions").innerHTML = "";
-      document.getElementById("search").value = "";
-    });
-
-    // عرض اقتراحات سريعة أثناء الكتابة
-    document.getElementById("search").addEventListener("input", function () {
-      const query = normalizeArabic(this.value);
-      const suggestionsEl = document.getElementById("suggestions");
-      suggestionsEl.innerHTML = "";
-
-      if (query.length === 0 || students.length === 0) return;
-
-      const matches = students.filter(s => s.normName.includes(query)).slice(0, 5); // أول 5 اقتراحات
-
-      matches.forEach(s => {
-        const li = document.createElement("li");
-        li.textContent = s.name;
-        li.onclick = () => {
-          document.getElementById("search").value = s.name;
-          suggestionsEl.innerHTML = "";
-        };
-        suggestionsEl.appendChild(li);
-      });
-    });
-
-    // البحث عند الضغط على زر "عرض النتيجة"
-    document.getElementById("showResults").addEventListener("click", function () {
-      const query = normalizeArabic(document.getElementById("search").value);
-      const resultsEl = document.getElementById("results");
-      resultsEl.innerHTML = "";
-
-      if (!query) {
-        resultsEl.innerHTML = "<li>⚠️ اكتب اسم الطالب أولا</li>";
-        return;
-      }
-
-      const matches = students.filter(s => s.normName.includes(query));
-
-      if (matches.length === 0) {
-        resultsEl.innerHTML = "<li>❌ لا توجد نتائج مطابقة</li>";
-        return;
-      }
-
-      matches.forEach(s => {
-        const li = document.createElement("li");
-        li.textContent = s.name + " → " + s.grades.join(" | ");
-        resultsEl.appendChild(li);
-      });
-    });
   </script>
 </body>
 </html>
