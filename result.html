@@ -12,6 +12,17 @@
       text-align: center;
       padding: 30px;
     }
+    .banner {
+      background: linear-gradient(135deg, #3498db, #2c3e50);
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+      font-style: italic;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
     h1 {
       color: #2c3e50;
     }
@@ -19,7 +30,7 @@
       background: white;
       border-radius: 10px;
       padding: 20px;
-      max-width: 600px;
+      max-width: 650px;
       margin: 20px auto;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: right;
@@ -54,17 +65,6 @@
     .good { color: orange; }
     .pass { color: gray; }
     .weak { color: red; }
-    .banner {
-      background: #3498db;
-      color: white;
-      font-style: italic;
-      font-weight: bold;
-      font-size: 20px;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
     a {
       display: inline-block;
       margin-top: 15px;
@@ -80,13 +80,23 @@
   </style>
 </head>
 <body>
-  <div class="banner">🎓 منصة مستر عبدالله التمادي</div>
+  <div class="banner">🌟 منصة مستر عبدالله التمادي 🌟</div>
   <h1>📊 نتيجة الطالب</h1>
   <div id="resultCard" class="card">جاري التحميل...</div>
 
   <script>
     function getQueryParam(param) {
       return new URLSearchParams(window.location.search).get(param);
+    }
+
+    function normalizeArabic(str) {
+      return str
+        .replace(/[أإآا]/g, "ا")
+        .replace(/ى/g, "ي")
+        .replace(/ة/g, "ه")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
     }
 
     async function loadResult() {
@@ -111,37 +121,41 @@
         const name = cols[0].trim();
         const cls = cols[1].trim();
         const month = cols[2].trim();
-        const grades = cols.slice(3).map(x => x.trim());
+        const grades = cols.slice(3);
 
-        if (name === studentName && cls === studentClass && month === studentMonth) {
+        if (
+          normalizeArabic(name) === normalizeArabic(studentName) &&
+          normalizeArabic(cls) === normalizeArabic(studentClass) &&
+          normalizeArabic(month) === normalizeArabic(studentMonth)
+        ) {
           found = { name, cls, month, grades };
         }
       });
 
       if (!found) {
-        document.getElementById("resultCard").innerHTML = "⚠️ لا توجد درجات لهذا الشهر!";
+        document.getElementById("resultCard").innerHTML = "❌ لا توجد درجات لهذا الشهر.";
         return;
       }
 
-      // حساب المجموع والنسبة
-      let total = 0, maxTotal = 0;
+      // حساب النسبة المئوية
+      let totalStudent = 0;
+      let totalMax = 0;
       found.grades.forEach(g => {
         if (g.includes("/")) {
           const parts = g.split("/");
-          const got = parseFloat(parts[0]) || 0;
-          const max = parseFloat(parts[1]) || 0;
-          total += got;
-          maxTotal += max;
-        } else if (!isNaN(parseFloat(g))) {
-          total += parseFloat(g);
-          maxTotal += 100; // نفترض النهاية 100 إذا مش مذكورة
+          const studentScore = parseFloat(parts[0].replace("غ", "0")) || 0;
+          const maxScore = parseFloat(parts[1]) || 0;
+
+          totalStudent += studentScore;
+          totalMax += maxScore;
         }
       });
 
-      let percentage = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : 0;
+      let percentage = totalMax > 0 ? ((totalStudent / totalMax) * 100).toFixed(2) : 0;
 
       // تقدير عام
-      let gradeText = "", gradeClass = "";
+      let gradeText = "";
+      let gradeClass = "";
       if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
       else if (percentage >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
       else if (percentage >= 60) { gradeText = "جيد"; gradeClass = "good"; }
@@ -154,9 +168,9 @@
       html += `<p>🗓️ الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
-      found.grades.forEach((g, i) => {
-        html += `<tr><td>الحصة ${i+1}</td><td>${g || "-"}</td></tr>`;
-      });
+      for (let i = 0; i < 8; i++) {
+        html += `<tr><td>الحصة ${i+1}</td><td>${found.grades[i] || "-"}</td></tr>`;
+      }
       html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
