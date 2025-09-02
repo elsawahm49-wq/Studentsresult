@@ -13,6 +13,17 @@
       text-align: center;
       padding: 30px;
     }
+    .banner {
+      background: linear-gradient(135deg, #3498db, #2c3e50);
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+      font-style: italic;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
     h1 {
       color: #2c3e50;
       margin-bottom: 20px;
@@ -65,21 +76,10 @@
       background: #3498db;
       color: white;
     }
-    .banner {
-      background: #3498db;
-      color: white;
-      font-style: italic;
-      font-weight: bold;
-      font-size: 20px;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
   </style>
 </head>
 <body>
-  <div class="banner">🎓 منصة مستر عبدالله التمادي</div>
+  <div class="banner">🌟 منصة مستر عبدالله التمادي 🌟</div>
   <h1>📊 البحث عن نتيجة الطالب</h1>
 
   <label for="studentClass">اختر المرحلة:</label><br>
@@ -93,12 +93,6 @@
     <option value="تالته-ثانوي">الثالثة الثانوية</option>
   </select>
 
-  <div id="nameField">
-    <label for="studentName">اسم الطالب:</label><br>
-    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
-    <ul id="suggestions" class="suggestions"></ul>
-  </div>
-
   <br>
   <label for="studentMonth">اختر الشهر:</label><br>
   <select id="studentMonth">
@@ -106,16 +100,22 @@
     <option value="يناير">يناير</option>
     <option value="فبراير">فبراير</option>
     <option value="مارس">مارس</option>
-    <option value="أبريل">أبريل</option>
+    <option value="ابريل">ابريل</option>
     <option value="مايو">مايو</option>
     <option value="يونيو">يونيو</option>
     <option value="يوليو">يوليو</option>
-    <option value="أغسطس">أغسطس</option>
+    <option value="اغسطس">اغسطس</option>
     <option value="سبتمبر">سبتمبر</option>
-    <option value="أكتوبر">أكتوبر</option>
+    <option value="اكتوبر">اكتوبر</option>
     <option value="نوفمبر">نوفمبر</option>
     <option value="ديسمبر">ديسمبر</option>
   </select>
+
+  <div id="nameField">
+    <label for="studentName">اسم الطالب:</label><br>
+    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
+    <ul id="suggestions" class="suggestions"></ul>
+  </div>
 
   <br>
   <button onclick="searchResult()">عرض النتيجة</button>
@@ -127,7 +127,8 @@
         .replace(/ى/g, "ي")
         .replace(/ة/g, "ه")
         .replace(/\s+/g, " ")
-        .trim();
+        .trim()
+        .toLowerCase();
     }
 
     let studentsByClass = {};
@@ -143,13 +144,12 @@
         if (cols.length < 2) return;
         const name = cols[0].trim();
         const cls = cols[1].trim();
-        const grades = cols.slice(2); // باقي الأعمدة درجات
+        const grades = cols.slice(2);
 
         if (!studentsByClass[cls]) studentsByClass[cls] = [];
         studentsByClass[cls].push({ name, grades });
       });
 
-      // نشيل التكرارات ونرتب
       for (let cls in studentsByClass) {
         const seen = new Set();
         studentsByClass[cls] = studentsByClass[cls].filter(s => {
@@ -164,13 +164,13 @@
       loadStudents();
 
       const classSelect = document.getElementById("studentClass");
+      const monthSelect = document.getElementById("studentMonth");
       const nameField = document.getElementById("nameField");
       const studentNameInput = document.getElementById("studentName");
       const suggestionsBox = document.getElementById("suggestions");
 
       classSelect.addEventListener("change", function() {
-        const selectedClass = this.value;
-        if (!selectedClass) {
+        if (!this.value) {
           nameField.style.display = "none";
           return;
         }
@@ -191,7 +191,7 @@
 
         const filtered = studentsByClass[selectedClass]
           .filter(s => normalizeArabic(s.name).includes(val))
-          .slice(0, 5); // أول 5 اقتراحات
+          .slice(0, 5);
 
         suggestionsBox.innerHTML = "";
         if (filtered.length > 0) {
@@ -217,11 +217,10 @@
       const studentMonth = document.getElementById("studentMonth").value;
 
       if (!studentName || !studentClass || !studentMonth) {
-        alert("⚠️ من فضلك اختر المرحلة واسم الطالب والشهر.");
+        alert("⚠️ من فضلك اختر المرحلة والشهر واكتب اسم الطالب.");
         return;
       }
 
-      // هننقل الاسم + الصف + الشهر للصفحة التانية
       window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(studentMonth)}`;
     }
   </script>
