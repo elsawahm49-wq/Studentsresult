@@ -119,40 +119,39 @@
       });
 
       if (!found) {
-        document.getElementById("resultCard").innerHTML = "❌ لم يتم العثور على الطالب!";
+        document.getElementById("resultCard").innerHTML = "⚠️ لا توجد درجات لهذا الشهر!";
         return;
       }
 
-      // حساب النسبة المئوية
-      let totalStudent = 0;
-      let totalMax = 0;
-
+      // حساب المجموع والنسبة
+      let total = 0, maxTotal = 0;
       found.grades.forEach(g => {
         if (g.includes("/")) {
           const parts = g.split("/");
-          const studentScore = parts[0].trim() === "غ" ? 0 : parseFloat(parts[0]) || 0;
-          const maxScore = parseFloat(parts[1]) || 0;
-
-          totalStudent += studentScore;
-          totalMax += maxScore;
+          const got = parseFloat(parts[0]) || 0;
+          const max = parseFloat(parts[1]) || 0;
+          total += got;
+          maxTotal += max;
+        } else if (!isNaN(parseFloat(g))) {
+          total += parseFloat(g);
+          maxTotal += 100; // نفترض النهاية 100 إذا مش مذكورة
         }
       });
 
-      let percentage = totalMax > 0 ? ((totalStudent / totalMax) * 100).toFixed(2) : 0;
+      let percentage = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : 0;
 
-      // تقدير عام لفظي حسب النسبة
-      let gradeText = "";
-      let gradeClass = "";
+      // تقدير عام
+      let gradeText = "", gradeClass = "";
       if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
       else if (percentage >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
       else if (percentage >= 60) { gradeText = "جيد"; gradeClass = "good"; }
       else if (percentage >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
       else { gradeText = "ضعيف"; gradeClass = "weak"; }
 
-      // عرض البيانات في جدول
+      // عرض البيانات
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
-      html += `<p>🗓 الشهر: ${found.month}</p>`;
+      html += `<p>🗓️ الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
       found.grades.forEach((g, i) => {
