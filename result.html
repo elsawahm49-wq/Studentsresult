@@ -178,7 +178,12 @@
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
       for (let i = 0; i < 8; i++) {
-        html += `<tr><td>الحصة ${i+1}</td><td>${found.grades[i] || "-"}</td></tr>`;
+        let g = found.grades[i] || "-";
+        if (g.includes("/")) {
+          const [got, max] = g.split("/");
+          g = `${got.trim()} / ${max.trim()}`;
+        }
+        html += `<tr><td>الحصة ${i+1}</td><td>${g}</td></tr>`;
       }
       html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage.toFixed(2)}%</td></tr>`;
       html += `</table>`;
