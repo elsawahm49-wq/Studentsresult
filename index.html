@@ -13,18 +13,21 @@
       text-align: center;
       padding: 30px;
     }
-    .banner {
-      background: linear-gradient(135deg, #3498db, #2c3e50);
-      color: white;
-      font-size: 22px;
-      font-weight: bold;
+    h1 {
+      color: #fff;
+      margin-bottom: 20px;
       font-style: italic;
-      padding: 15px;
+    }
+    .banner {
+      background: linear-gradient(90deg, #3498db, #2c3e50);
+      padding: 20px;
       border-radius: 10px;
       margin-bottom: 20px;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+      color: white;
+      font-weight: bold;
+      font-size: 22px;
+      font-style: italic;
     }
-    h1 { color: #2c3e50; margin-bottom: 20px; }
     select, input {
       padding: 10px;
       font-size: 16px;
@@ -46,27 +49,32 @@
     button:hover { background: #2980b9; }
     #nameField { position: relative; display: none; }
     .suggestions {
-      list-style: none; margin: 0; padding: 0;
-      background: white; border: 1px solid #ccc;
-      border-radius: 8px; max-height: 150px; overflow-y: auto;
-      position: absolute; width: 100%; z-index: 10;
-      display: none; text-align: right;
-    }
-    .suggestions li { padding: 10px; cursor: pointer; }
-    .suggestions li:hover { background: #3498db; color: white; }
-    #debugBox {
-      background: #222;
-      color: lime;
-      padding: 10px;
-      margin-top: 20px;
-      font-size: 14px;
-      text-align: right;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      background: white;
+      border: 1px solid #ccc;
       border-radius: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+      position: absolute;
+      width: 100%;
+      z-index: 10;
+      display: none;
+      text-align: right;
+    }
+    .suggestions li {
+      padding: 10px;
+      cursor: pointer;
+    }
+    .suggestions li:hover {
+      background: #3498db;
+      color: white;
     }
   </style>
 </head>
 <body>
-  <div class="banner">🌟 منصة مستر عبدالله التمادي 🌟</div>
+  <div class="banner">📌 منصة مستر عبدالله التمادي</div>
   <h1>📊 البحث عن نتيجة الطالب</h1>
 
   <label for="studentClass">اختر المرحلة:</label><br>
@@ -79,8 +87,15 @@
     <option value="تانيه-ثانوي">الثانية الثانوية</option>
     <option value="تالته-ثانوي">الثالثة الثانوية</option>
   </select>
-
   <br>
+
+  <div id="nameField">
+    <label for="studentName">اسم الطالب:</label><br>
+    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
+    <ul id="suggestions" class="suggestions"></ul>
+  </div>
+  <br>
+
   <label for="studentMonth">اختر الشهر:</label><br>
   <select id="studentMonth">
     <option value="">-- اختر الشهر --</option>
@@ -98,73 +113,66 @@
     <option value="ديسمبر">ديسمبر</option>
   </select>
 
-  <div id="nameField">
-    <label for="studentName">اسم الطالب:</label><br>
-    <input type="text" id="studentName" placeholder="اكتب الاسم هنا">
-    <ul id="suggestions" class="suggestions"></ul>
-  </div>
-
   <br>
   <button onclick="searchResult()">عرض النتيجة</button>
 
-  <div id="debugBox">🔎 رسائل Debug ستظهر هنا...</div>
-
   <script>
-    function debug(msg) {
-      document.getElementById("debugBox").innerHTML += "<div>" + msg + "</div>";
-    }
-
     function normalizeArabic(str) {
       return str
         .replace(/[أإآا]/g, "ا")
         .replace(/ى/g, "ي")
         .replace(/ة/g, "ه")
         .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase();
+        .trim();
     }
 
     let studentsByClass = {};
+    const FILES_BY_CLASS = {
+      "اولي-اعدادي": "students_results_1e.csv",
+      "تانيه-اعدادي": "students_results_2e.csv",
+      "تالته-اعدادي": "students_results_3e.csv",
+      "اولي-ثانوي": "students_results_1thanwy.csv",
+      "تانيه-ثانوي": "students_results_2thanwy.csv",
+      "تالته-ثانوي": "students_results_3thanwy.csv"
+    };
 
-    async function loadStudents() {
-      const response = await fetch("students_results.csv");
+    async function loadStudents(selectedClass) {
+      const fileName = FILES_BY_CLASS[selectedClass];
+      if (!fileName) return;
+
+      const response = await fetch(fileName);
       const text = await response.text();
       const rows = text.split("\n").slice(1);
 
-      studentsByClass = {};
+      studentsByClass[selectedClass] = [];
       rows.forEach(row => {
         const cols = row.split(",");
         if (cols.length < 2) return;
         const name = cols[0].trim();
         const cls = cols[1].trim();
-        const grades = cols.slice(2);
-
-        if (!studentsByClass[cls]) studentsByClass[cls] = [];
-        studentsByClass[cls].push({ name, grades });
+        if (cls === selectedClass) {
+          studentsByClass[selectedClass].push({ name });
+        }
       });
 
-      for (let cls in studentsByClass) {
-        const seen = new Set();
-        studentsByClass[cls] = studentsByClass[cls].filter(s => {
-          if (seen.has(s.name)) return false;
-          seen.add(s.name);
-          return true;
-        }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
-      }
-
-      debug("✅ تم تحميل ملف CSV (" + rows.length + " صفوف).");
+      // نشيل التكرارات ونرتب
+      const seen = new Set();
+      studentsByClass[selectedClass] = studentsByClass[selectedClass].filter(s => {
+        if (seen.has(s.name)) return false;
+        seen.add(s.name);
+        return true;
+      }).sort((a, b) => a.name.localeCompare(b.name, "ar"));
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      loadStudents();
-
       const classSelect = document.getElementById("studentClass");
       const nameField = document.getElementById("nameField");
       const studentNameInput = document.getElementById("studentName");
       const suggestionsBox = document.getElementById("suggestions");
 
-      classSelect.addEventListener("change", function() {
-        if (!this.value) {
+      classSelect.addEventListener("change", async function() {
+        const selectedClass = this.value;
+        if (!selectedClass) {
           nameField.style.display = "none";
           return;
         }
@@ -172,7 +180,7 @@
         studentNameInput.value = "";
         suggestionsBox.innerHTML = "";
         suggestionsBox.style.display = "none";
-        debug("📘 اخترت المرحلة: " + this.value);
+        await loadStudents(selectedClass);
       });
 
       studentNameInput.addEventListener("input", function() {
@@ -196,14 +204,12 @@
             li.addEventListener("click", () => {
               studentNameInput.value = s.name;
               suggestionsBox.style.display = "none";
-              debug("👤 اخترت الطالب: " + s.name);
             });
             suggestionsBox.appendChild(li);
           });
           suggestionsBox.style.display = "block";
         } else {
           suggestionsBox.style.display = "none";
-          debug("⚠️ لا توجد أسماء مطابقة لـ: " + val);
         }
       });
     });
@@ -214,14 +220,11 @@
       const studentMonth = document.getElementById("studentMonth").value;
 
       if (!studentName || !studentClass || !studentMonth) {
-        alert("⚠️ من فضلك اختر المرحلة والشهر واكتب اسم الطالب.");
+        alert("⚠️ من فضلك اختر المرحلة واكتب الاسم واختر الشهر.");
         return;
       }
 
-      debug("➡️ جاري فتح النتيجة: " + studentName + " | " + studentClass + " | " + studentMonth);
-
-      window.location.href =
-        `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(studentMonth)}`;
+      window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(studentMonth)}`;
     }
   </script>
 </body>
