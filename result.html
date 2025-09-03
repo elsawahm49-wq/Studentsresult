@@ -32,10 +32,7 @@
       padding: 10px;
       text-align: center;
     }
-    th {
-      background: #3498db;
-      color: white;
-    }
+    th { background: #3498db; color: white; }
     .total { font-weight: bold; color: #2980b9; }
     .grade {
       font-size: 18px;
@@ -98,11 +95,17 @@
         return;
       }
 
-      let fileName = "";
-      if (studentClass.includes("اعدادي")) fileName = "students_results.csv";
-      else if (studentClass.includes("ثانوي")) fileName = "students_results_secondary.csv";
-      else fileName = "students_results.csv";
+      // ✅ خريطة الملفات لكل المراحل
+      const FILES_BY_CLASS = {
+        "اولي-اعدادي": "students_results_1e.csv",
+        "تانيه-اعدادي": "students_results_2e.csv",
+        "تالته-اعدادي": "students_results_3e.csv",
+        "اولي-ثانوي": "students_results_1thanwy.csv",
+        "تانيه-ثانوي": "students_results_2thanwy.csv",
+        "تالته-ثانوي": "students_results_3thanwy.csv"
+      };
 
+      let fileName = FILES_BY_CLASS[studentClass] || "students_results_3e.csv";
       debug("📂 جاري تحميل الملف: " + fileName);
 
       const response = await fetch(fileName);
@@ -132,7 +135,7 @@
 
       debug("✅ تم العثور على الطالب: " + found.name);
 
-      // حساب النسبة من الدرجات المسجلة
+      // حساب النسبة من الدرجات بصيغة "24/30" أو "غ"
       let total = 0, maxTotal = 0;
       found.grades.forEach(g => {
         if (!g || g === "-") return;
