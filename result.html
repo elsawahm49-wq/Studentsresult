@@ -133,7 +133,7 @@
         return;
       }
 
-      // حساب النسبة بدقة من الدرجات
+      // ✅ حساب النسبة بدقة (مع تصحيح الحصة المتشقلبة)
       let obtained = 0;
       let maxTotal = 0;
 
@@ -141,18 +141,26 @@
         if (!g || g.trim() === "") return;
 
         if (g.includes("/")) {
-          const parts = g.split("/");
-          let got = parts[0].trim();
-          let max = parts[1].trim();
+          let [part1, part2] = g.split("/");
+          part1 = part1.trim();
+          part2 = part2.trim();
 
-          if (got === "غ") got = "0";
+          if (part1 === "غ") part1 = "0";
 
-          const numGot = parseFloat(got);
-          const numMax = parseFloat(max);
+          let num1 = parseFloat(part1);
+          let num2 = parseFloat(part2);
 
-          if (!isNaN(numGot) && !isNaN(numMax)) {
-            obtained += numGot;
-            maxTotal += numMax;
+          let got = 0, max = 0;
+          if (!isNaN(num1) && !isNaN(num2)) {
+            if (num1 <= num2) {
+              got = num1;
+              max = num2;
+            } else {
+              got = num2;
+              max = num1;
+            }
+            obtained += got;
+            maxTotal += max;
           }
         }
       });
