@@ -13,12 +13,7 @@
       padding: 30px;
     }
     h1 {
-      color: #fff;
-      background: #3498db;
-      padding: 15px;
-      border-radius: 10px;
-      font-style: italic;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      color: #2c3e50;
     }
     .card {
       background: white;
@@ -71,13 +66,6 @@
     a:hover {
       background: #2980b9;
     }
-    .whatsapp {
-      background: #25D366;
-      margin-top: 10px;
-    }
-    .whatsapp:hover {
-      background: #128C7E;
-    }
   </style>
 </head>
 <body>
@@ -92,23 +80,22 @@
     async function loadResult() {
       const studentName = getQueryParam("name");
       const studentClass = getQueryParam("class");
-      const studentMonth = getQueryParam("month");
 
-      if (!studentName || !studentClass || !studentMonth) {
+      if (!studentName || !studentClass) {
         document.getElementById("resultCard").innerHTML = "❌ البيانات غير مكتملة!";
         return;
       }
 
-      // اختيار الملف حسب المرحلة
-      let fileName = "";
-      if (studentClass === "تالته-اعدادي") {
-        fileName = "students_results_3e.csv";
-      } else if (studentClass === "اولي-ثانوي") {
-        fileName = "students_results_1thanwy.csv";
-      } else {
-        fileName = "students_results_3e.csv"; // افتراضي
-      }
+      // ✅ تحديد اسم الملف حسب الصف
+      let fileName = "students_results.csv"; // الافتراضي
+      if (studentClass === "اولي-اعدادي") fileName = "students_results_1e.csv";
+      else if (studentClass === "تانيه-اعدادي") fileName = "students_results_2e.csv";
+      else if (studentClass === "تالته-اعدادي") fileName = "students_results_3e.csv";
+      else if (studentClass === "اولي-ثانوي") fileName = "students_results_1s.csv";
+      else if (studentClass === "تانيه-ثانوي") fileName = "students_results_2s.csv";
+      else if (studentClass === "تالته-ثانوي") fileName = "students_results_3s.csv";
 
+      // ✅ تحميل الملف الصحيح
       const response = await fetch(fileName);
       const text = await response.text();
       const rows = text.split("\n").slice(1);
@@ -116,15 +103,14 @@
       let found = null;
       rows.forEach(row => {
         const cols = row.split(",");
-        if (cols.length < 4) return;
+        if (cols.length < 3) return;
 
         const name = cols[0].trim();
         const cls = cols[1].trim();
-        const month = cols[2].trim();
         const grades = cols.slice(3).map(x => x.trim());
 
-        if (name === studentName && cls === studentClass && month === studentMonth) {
-          found = { name, cls, month, grades };
+        if (name === studentName && cls === studentClass) {
+          found = { name, cls, grades };
         }
       });
 
@@ -133,44 +119,21 @@
         return;
       }
 
-      // ✅ حساب النسبة بدقة (مع تصحيح الحصة المتشقلبة)
-      let obtained = 0;
-      let maxTotal = 0;
-
+      // حساب المجموع (محاولة استخراج الأرقام)
+      let total = 0, maxTotal = 0;
       found.grades.forEach(g => {
-        if (!g || g.trim() === "") return;
-
         if (g.includes("/")) {
-          let [part1, part2] = g.split("/");
-          part1 = part1.trim();
-          part2 = part2.trim();
-
-          if (part1 === "غ") part1 = "0";
-
-          let num1 = parseFloat(part1);
-          let num2 = parseFloat(part2);
-
-          let got = 0, max = 0;
-          if (!isNaN(num1) && !isNaN(num2)) {
-            if (num1 <= num2) {
-              got = num1;
-              max = num2;
-            } else {
-              got = num2;
-              max = num1;
-            }
-            obtained += got;
-            maxTotal += max;
+          const [num, den] = g.split("/").map(x => parseFloat(x));
+          if (!isNaN(num) && !isNaN(den)) {
+            total += num;
+            maxTotal += den;
           }
         }
       });
 
-      let percentage = 0;
-      if (maxTotal > 0) {
-        percentage = (obtained / maxTotal) * 100;
-      }
+      const percentage = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : 0;
 
-      // تقدير عام لفظي
+      // تقدير عام لفظي حسب النسبة
       let gradeText = "";
       let gradeClass = "";
       if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
@@ -179,25 +142,18 @@
       else if (percentage >= 50) { gradeText = "مقبول"; gradeClass = "pass"; }
       else { gradeText = "ضعيف"; gradeClass = "weak"; }
 
-      // عرض البيانات
+      // عرض البيانات في جدول
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
-      html += `<p>🗓️ الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
-      for (let i = 0; i < 8; i++) {
-        let g = found.grades[i] || "-";
-        if (g.includes("/")) {
-          const [got, max] = g.split("/");
-          g = `${got.trim()} / ${max.trim()}`;
-        }
-        html += `<tr><td>الحصة ${i+1}</td><td>${g}</td></tr>`;
-      }
-      html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage.toFixed(2)}%</td></tr>`;
+      found.grades.forEach((g, i) => {
+        html += `<tr><td>الحصة ${i+1}</td><td>${g || "-"}</td></tr>`;
+      });
+      html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
-      html += `<a href="index.html">⬅ الرجوع للبحث</a><br>`;
-      html += `<a class="whatsapp" href="https://wa.me/201210196595" target="_blank">📱 تواصل عبر واتساب</a>`;
+      html += `<a href="index.html">⬅ الرجوع للبحث</a>`;
 
       document.getElementById("resultCard").innerHTML = html;
     }
