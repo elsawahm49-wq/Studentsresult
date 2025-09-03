@@ -12,17 +12,6 @@
       text-align: center;
       padding: 30px;
     }
-    .banner {
-      background: linear-gradient(135deg, #3498db, #2c3e50);
-      color: white;
-      font-size: 22px;
-      font-weight: bold;
-      font-style: italic;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-    }
     h1 { color: #2c3e50; }
     .card {
       background: white;
@@ -33,42 +22,64 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: right;
     }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
     table, th, td { border: 1px solid #ccc; }
-    th, td { padding: 10px; text-align: center; }
-    th { background: #3498db; color: white; }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #3498db;
+      color: white;
+    }
     .total { font-weight: bold; color: #2980b9; }
-    .grade { font-size: 18px; font-weight: bold; margin-top: 15px; }
+    .grade {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
     .excellent { color: green; }
     .verygood { color: #2980b9; }
     .good { color: orange; }
     .pass { color: gray; }
     .weak { color: red; }
     a {
-      display: inline-block; margin-top: 15px; text-decoration: none;
-      color: white; background: #3498db; padding: 10px 20px; border-radius: 8px;
+      display: inline-block;
+      margin-top: 15px;
+      text-decoration: none;
+      color: white;
+      background: #3498db;
+      padding: 10px 20px;
+      border-radius: 8px;
     }
     a:hover { background: #2980b9; }
+    #debugBox {
+      background: #222;
+      color: lime;
+      padding: 10px;
+      margin-top: 20px;
+      font-size: 14px;
+      text-align: right;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
-  <div class="banner">🌟 منصة مستر عبدالله التمادي 🌟</div>
   <h1>📊 نتيجة الطالب</h1>
   <div id="resultCard" class="card">جاري التحميل...</div>
+  <div id="debugBox">🔎 رسائل Debug ستظهر هنا...</div>
 
   <script>
-    function getQueryParam(param) {
-      return new URLSearchParams(window.location.search).get(param);
+    function debug(msg) {
+      document.getElementById("debugBox").innerHTML += "<div>" + msg + "</div>";
     }
 
-    function normalizeArabic(str) {
-      return str
-        .replace(/[أإآا]/g, "ا")
-        .replace(/ى/g, "ي")
-        .replace(/ة/g, "ه")
-        .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase();
+    function getQueryParam(param) {
+      return new URLSearchParams(window.location.search).get(param);
     }
 
     async function loadResult() {
@@ -76,12 +87,25 @@
       const studentClass = getQueryParam("class");
       const studentMonth = getQueryParam("month");
 
+      debug("📥 البيانات من الرابط:");
+      debug("👤 الاسم: " + studentName);
+      debug("📘 المرحلة: " + studentClass);
+      debug("🗓 الشهر: " + studentMonth);
+
       if (!studentName || !studentClass || !studentMonth) {
         document.getElementById("resultCard").innerHTML = "❌ البيانات غير مكتملة!";
+        debug("⚠️ البيانات غير مكتملة!");
         return;
       }
 
-      const response = await fetch("students_results.csv");
+      let fileName = "";
+      if (studentClass.includes("اعدادي")) fileName = "students_results.csv";
+      else if (studentClass.includes("ثانوي")) fileName = "students_results_secondary.csv";
+      else fileName = "students_results.csv";
+
+      debug("📂 جاري تحميل الملف: " + fileName);
+
+      const response = await fetch(fileName);
       const text = await response.text();
       const rows = text.split("\n").slice(1);
 
@@ -93,35 +117,37 @@
         const name = cols[0].trim();
         const cls = cols[1].trim();
         const month = cols[2].trim();
+        const grades = cols.slice(3);
 
-        if (
-          normalizeArabic(name).includes(normalizeArabic(studentName)) &&
-          normalizeArabic(cls).includes(normalizeArabic(studentClass)) &&
-          normalizeArabic(month).includes(normalizeArabic(studentMonth))
-        ) {
-          found = { name, cls, month, grades: cols.slice(3) };
+        if (name === studentName && cls === studentClass && month === studentMonth) {
+          found = { name, cls, month, grades };
         }
       });
 
       if (!found) {
-        document.getElementById("resultCard").innerHTML = "⚠️ لا توجد درجات لهذا الطالب في هذا الشهر!";
+        document.getElementById("resultCard").innerHTML = "❌ لم يتم العثور على الطالب في هذا الشهر!";
+        debug("⚠️ لم يتم العثور على الطالب.");
         return;
       }
 
-      // حساب النسبة المئوية
-      let totalStudent = 0, totalMax = 0;
-      found.grades.forEach(g => {
-        if (g.includes("/")) {
-          const [got, max] = g.split("/");
-          const studentScore = got.trim() === "غ" ? 0 : parseFloat(got) || 0;
-          const maxScore = parseFloat(max) || 0;
-          totalStudent += studentScore;
-          totalMax += maxScore;
-        }
-      });
-      let percentage = totalMax > 0 ? ((totalStudent / totalMax) * 100).toFixed(2) : 0;
+      debug("✅ تم العثور على الطالب: " + found.name);
 
-      // التقدير العام
+      // حساب النسبة من الدرجات المسجلة
+      let total = 0, maxTotal = 0;
+      found.grades.forEach(g => {
+        if (!g || g === "-") return;
+        let [scored, max] = g.split("/").map(x => x.trim());
+        let scoredNum = (scored === "غ") ? 0 : parseFloat(scored);
+        let maxNum = parseFloat(max);
+        if (!isNaN(scoredNum)) total += scoredNum;
+        if (!isNaN(maxNum)) maxTotal += maxNum;
+      });
+
+      debug("📊 مجموع الطالب: " + total + " / " + maxTotal);
+
+      let percentage = (maxTotal > 0) ? ((total / maxTotal) * 100).toFixed(2) : 0;
+
+      // تقدير عام لفظي
       let gradeText = "", gradeClass = "";
       if (percentage >= 90) { gradeText = "ممتاز"; gradeClass = "excellent"; }
       else if (percentage >= 75) { gradeText = "جيد جدًا"; gradeClass = "verygood"; }
@@ -132,18 +158,19 @@
       // عرض البيانات
       let html = `<h2>👤 ${found.name}</h2>`;
       html += `<p>📘 المرحلة: ${found.cls}</p>`;
-      html += `<p>🗓️ الشهر: ${found.month}</p>`;
+      html += `<p>🗓 الشهر: ${found.month}</p>`;
       html += `<table>
                 <tr><th>الحصة</th><th>الدرجة</th></tr>`;
-      for (let i = 0; i < 8; i++) {
-        html += `<tr><td>الحصة ${i+1}</td><td>${found.grades[i] || "-"}</td></tr>`;
-      }
+      found.grades.forEach((g, i) => {
+        html += `<tr><td>الحصة ${i+1}</td><td>${g || "-"}</td></tr>`;
+      });
       html += `<tr><td class="total">النسبة المئوية</td><td class="total">${percentage}%</td></tr>`;
       html += `</table>`;
       html += `<p class="grade ${gradeClass}">🎯 التقدير العام: ${gradeText}</p>`;
       html += `<a href="index.html">⬅ الرجوع للبحث</a>`;
 
       document.getElementById("resultCard").innerHTML = html;
+      debug("🎯 النسبة: " + percentage + "% | التقدير: " + gradeText);
     }
 
     loadResult();
