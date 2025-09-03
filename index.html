@@ -24,10 +24,7 @@
       margin-bottom: 20px;
       text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
     }
-    h1 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-    }
+    h1 { color: #2c3e50; margin-bottom: 20px; }
     select, input {
       padding: 10px;
       font-size: 16px;
@@ -46,36 +43,17 @@
       font-size: 16px;
       margin-top: 15px;
     }
-    button:hover {
-      background: #2980b9;
-    }
-    #nameField {
-      position: relative;
-      display: none;
-    }
+    button:hover { background: #2980b9; }
+    #nameField { position: relative; display: none; }
     .suggestions {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      max-height: 150px;
-      overflow-y: auto;
-      position: absolute;
-      width: 100%;
-      z-index: 10;
-      display: none;
-      text-align: right;
+      list-style: none; margin: 0; padding: 0;
+      background: white; border: 1px solid #ccc;
+      border-radius: 8px; max-height: 150px; overflow-y: auto;
+      position: absolute; width: 100%; z-index: 10;
+      display: none; text-align: right;
     }
-    .suggestions li {
-      padding: 10px;
-      cursor: pointer;
-    }
-    .suggestions li:hover {
-      background: #3498db;
-      color: white;
-    }
+    .suggestions li { padding: 10px; cursor: pointer; }
+    .suggestions li:hover { background: #3498db; color: white; }
   </style>
 </head>
 <body>
@@ -164,7 +142,6 @@
       loadStudents();
 
       const classSelect = document.getElementById("studentClass");
-      const monthSelect = document.getElementById("studentMonth");
       const nameField = document.getElementById("nameField");
       const studentNameInput = document.getElementById("studentName");
       const suggestionsBox = document.getElementById("suggestions");
@@ -220,6 +197,13 @@
         alert("⚠️ من فضلك اختر المرحلة والشهر واكتب اسم الطالب.");
         return;
       }
+
+      // 👇 Debug: اطبع القيم اللي هتتبعت للرابط
+      console.log("➡️ Sending to result.html:", {
+        name: studentName,
+        class: studentClass,
+        month: studentMonth
+      });
 
       window.location.href = `result.html?name=${encodeURIComponent(studentName)}&class=${encodeURIComponent(studentClass)}&month=${encodeURIComponent(studentMonth)}`;
     }
